@@ -247,6 +247,8 @@ def main():
         msg_type = "VAM"
     elif args.type == "mcm_uulm":
         msg_type = "MCM"
+    elif args.type == "carma_j2735":
+        msg_type = "CARMA"
     msg_files = findDependenciesOfRosMessageType(os.path.join(args.output_dir, f"{msg_type}.msg"), [msg_type])
     msg_files += additionalMessageTypes(args.output_dir, msg_type)
     msg_files = sortMessageFiles(msg_files)

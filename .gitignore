@@ -178,3 +178,8 @@ pyrightconfig.json
 # ignore ros2 bagfiles
 metadata.yaml
 *.db3
+asn1/raw/.DS_Store
+asn1/patches/cam_ts103900/.DS_Store
+asn1/patches/.DS_Store
+asn1/.DS_Store
+.DS_Store

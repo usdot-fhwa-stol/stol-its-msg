@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "properties": {
+    "sequence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "optional": {
+            "type": "boolean"
+          }
+        },
+        "required": ["name", "type"]
+      }
+    }
+  },
+  "required": ["sequence"]
+}

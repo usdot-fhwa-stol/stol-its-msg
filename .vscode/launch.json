@@ -3,17 +3,17 @@
     "compounds": [
         {
             "name": "All (coding)",
-            "configurations": ["CAM (coding)", "CAM TS (coding)", "DENM (coding)", "DENM TS (coding)", "CPM TS (coding)", "VAM TS (coding)", "MAPEM TS (coding)", "SPATEM TS (coding)", "MCM UULM (coding)"],
+            "configurations": ["CAM (coding)", "CAM TS (coding)", "DENM (coding)", "DENM TS (coding)", "CPM TS (coding)", "VAM TS (coding)", "MAPEM TS (coding)", "SPATEM TS (coding)", "MCM UULM (coding)", "CARMA (coding)"],
             "stopAll": false
         },
         {
             "name": "All (msgs)",
-            "configurations": ["CAM (msgs)", "CAM TS (msgs)", "DENM (msgs)", "DENM TS (msgs)", "CPM TS (msgs)", "VAM TS (msgs)", "MAPEM TS (msgs)", "SPATEM TS (msgs)", "MCM UULM (msgs)"],
+            "configurations": ["CAM (msgs)", "CAM TS (msgs)", "DENM (msgs)", "DENM TS (msgs)", "CPM TS (msgs)", "VAM TS (msgs)", "MAPEM TS (msgs)", "SPATEM TS (msgs)", "MCM UULM (msgs)", "CARMA (msgs)"],
             "stopAll": false
         },
         {
             "name": "All (conversion)",
-            "configurations": ["CAM (conversion)", "CAM TS (conversion)", "DENM (conversion)", "DENM TS (conversion)", "CPM TS (conversion)", "VAM TS (conversion)", "MAPEM TS (conversion)", "SPATEM TS (conversion)", "MCM UULM (conversion)"],
+            "configurations": ["CAM (conversion)", "CAM TS (conversion)", "DENM (conversion)", "DENM TS (conversion)", "CPM TS (conversion)", "VAM TS (conversion)", "MAPEM TS (conversion)", "SPATEM TS (conversion)", "MCM UULM (conversion)", "CARMA (conversion)"],
             "stopAll": false
         }
     ],
@@ -507,5 +507,50 @@
             "console": "integratedTerminal",
             "justMyCode": true
         },
+        {
+            "name": "CARMA (coding)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "utils/codegen/asn1ToC/asn1ToC.py",
+            "args": [
+                "asn1/raw/carma_j2735/TestMessage01.asn",
+                "-t",
+                "carma_j2735",
+                "-o",
+                "etsi_its_coding/etsi_its_carma_j2735_coding"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "CARMA (msgs)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "utils/codegen/codegen-py/asn1ToRosMsg.py",
+            "args": [
+                "asn1/raw/carma_j2735/TestMessage01.asn",
+                "-t",
+                "carma_j2735",
+                "-o",
+                "etsi_its_msgs/etsi_its_carma_j2735_msgs/msg"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "CARMA (conversion)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "utils/codegen/codegen-py/asn1ToConversionHeader.py",
+            "args": [
+                "asn1/raw/carma_j2735/TestMessage01.asn",
+                "-t",
+                "carma_j2735",
+                "-o",
+                "etsi_its_conversion/etsi_its_carma_j2735_conversion/include/etsi_its_carma_j2735_conversion"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
     ]
 }
