@@ -23,7 +23,7 @@ RUN apt-get update && \
 
 # install asnc1c
 WORKDIR /setup
-RUN git clone https://github.com/usdot-fhwa-stol/usdot-asn1c/tree/vlm_master
+RUN git clone https://github.com/usdot-fhwa-stol/usdot-asn1c.git
 WORKDIR /setup/asn1c
 ARG ASN1C_COMMIT=4d962f89b318dc5e07d9c4afa3f5389341b6fb92
 RUN git checkout ${ASN1C_COMMIT} && \
