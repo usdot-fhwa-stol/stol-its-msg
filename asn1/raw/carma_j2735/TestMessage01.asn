@@ -1,0 +1,46 @@
+TestMessage01 DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+TestMessage01 ::= SEQUENCE {
+   -- TestMessage01 is only for MobilityResponse message
+   header    MobilityHeader,
+   body      MobilityResponse,
+   ...
+   }
+MobilityResponseFlag ::= BOOLEAN
+   -- the value indicates whether corresponding request is accepted or not
+
+MobilityDynamicID ::= IA5String (SIZE(8))
+   -- mobility dynamic ID is the same as host vehicle current BSM ID in hex string
+
+MobilityResponse ::= SEQUENCE {
+   urgency         MobilityUrgency,
+   isAccepted      MobilityResponseFlag
+}
+
+-- End of the self-defined mobility message data frame --
+
+
+MobilityStaticID ::= IA5String (SIZE(2..16))
+   -- the license plate number for each vehicle
+   -- "[]" indicates ID is not specified
+
+MobilityHeader ::= SEQUENCE {
+   hostStaticId    MobilityStaticID,
+   targetStaticId  MobilityStaticID,
+   hostBSMId       MobilityDynamicID,
+   planId          MobilityGUID,
+   timestamp       MobilityTimestamp
+}
+
+MobilityTimestamp ::= IA5String (SIZE(19))
+   -- UNIX timestamp in milliseconds in string, which indicates the time elapsed since UNIX epoch
+   -- the maximum value is the MAX_VALUE of Java Long type (which is in length 19)
+
+MobilityUrgency ::= INTEGER (0..1000)
+   -- a value of 0 shall be used for unknown
+   -- a value of 1000 shall be used for the highest urgency
+
+MobilityGUID ::= IA5String (SIZE(36))
+   -- the unique ID for different plan/strategy events
+   -- in Java UUID format xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
+END

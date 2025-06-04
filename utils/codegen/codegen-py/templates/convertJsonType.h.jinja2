@@ -1,0 +1,87 @@
+/** Auto-generated JSON conversion header for {{type_name}} */
+
+#pragma once
+
+#include <nlohmann/json.hpp>
+#include <etsi_its_{{etsi_type}}_coding/{{etsi_type}}_{{asn1_type_name}}.h>
+
+namespace etsi_its_{{etsi_type}}_conversion {
+
+using json = nlohmann::json;
+
+{% if type == "SEQUENCE" %}
+void toJson(const {{etsi_type}}_{{asn1_type_name}}_t& src, json& dst) {
+    {% for member in members %}
+    {% if member.optional %}
+    if(src.{{member.field_name}}) {
+        json {{member.field_name}}_json;
+        toJson(*src.{{member.field_name}}, {{member.field_name}}_json);
+        dst["{{member.field_name}}"] = {{member.field_name}}_json;
+    }
+    {% else %}
+    json {{member.field_name}}_json;
+    toJson(src.{{member.field_name}}, {{member.field_name}}_json);
+    dst["{{member.field_name}}"] = {{member.field_name}}_json;
+    {% endif %}
+    {% endfor %}
+}
+
+void fromJson(const json& src, {{etsi_type}}_{{asn1_type_name}}_t& dst) {
+    {% for member in members %}
+    {% if member.optional %}
+    if(src.contains("{{member.field_name}}")) {
+        dst.{{member.field_name}} = new {{member.type_name}}_t();
+        fromJson(src["{{member.field_name}}"], *dst.{{member.field_name}});
+    }
+    {% else %}
+    fromJson(src["{{member.field_name}}"], dst.{{member.field_name}});
+    {% endif %}
+    {% endfor %}
+}
+
+{% elif type == "CHOICE" %}
+void toJson(const {{etsi_type}}_{{asn1_type_name}}_t& src, json& dst) {
+    switch(src.present) {
+        {% for member in members %}
+        case {{member.present_enum}}:
+            dst["choice"] = "{{member.field_name}}";
+            json value_json;
+            toJson(src.choice.{{member.field_name}}, value_json);
+            dst["value"] = value_json;
+            break;
+        {% endfor %}
+    }
+}
+
+void fromJson(const json& src, {{etsi_type}}_{{asn1_type_name}}_t& dst) {
+    std::string choice = src["choice"];
+    {% for member in members %}
+    if(choice == "{{member.field_name}}") {
+        dst.present = {{member.present_enum}};
+        fromJson(src["value"], dst.choice.{{member.field_name}});
+    }
+    {% endfor %}
+}
+
+{% elif type == "ENUMERATED" %}
+void toJson(const {{etsi_type}}_{{asn1_type_name}}_t& src, json& dst) {
+    switch(src) {
+        {% for value in values %}
+        case {{value.enum_name}}:
+            dst = "{{value.name}}";
+            break;
+        {% endfor %}
+    }
+}
+
+void fromJson(const json& src, {{etsi_type}}_{{asn1_type_name}}_t& dst) {
+    std::string value = src.get<std::string>();
+    {% for value in values %}
+    if(value == "{{value.name}}") {
+        dst = {{value.enum_name}};
+    }
+    {% endfor %}
+}
+{% endif %}
+
+} // namespace etsi_its_{{etsi_type}}_conversion

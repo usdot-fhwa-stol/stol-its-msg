@@ -1,0 +1,52 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "{{type_name}}",
+    "description": "ASN.1 {{asn1_type}} converted to JSON Schema",
+    {% if asn1_definition %}
+    "asn1Definition": {{asn1_definition | tojson}},
+    {% endif %}
+    {% if type == "SEQUENCE" %}
+    "type": "object",
+    "properties": {
+        {% for field in fields %}
+        "{{field.name}}": {
+            "type": "{{field.json_type}}",
+            {% if field.description %}
+            "description": "{{field.description}}",
+            {% endif %}
+            {% if field.constraints %}
+            "constraints": {{field.constraints | tojson}},
+            {% endif %}
+            {% if field.enum_values %}
+            "enum": {{field.enum_values | tojson}},
+            {% endif %}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    },
+    "required": [
+        {% for field in required_fields %}
+        "{{field}}"{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]
+    {% elif type == "CHOICE" %}
+    "type": "object",
+    "oneOf": [
+        {% for choice in choices %}
+        {
+            "type": "object",
+            "properties": {
+                "{{choice.name}}": {
+                    "type": "{{choice.json_type}}"
+                }
+            },
+            "required": ["{{choice.name}}"]
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]
+    {% elif type == "ENUMERATED" %}
+    "type": "string",
+    "enum": {{enum_values | tojson}}
+    {% else %}
+    "type": "{{json_type}}"
+    {% endif %}
+}
