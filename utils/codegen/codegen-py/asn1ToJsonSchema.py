@@ -2,6 +2,7 @@
 
 import argparse
 import glob
+import json
 import os
 from typing import Dict, List
 
@@ -52,6 +53,13 @@ def exportJsonSchema(json_schema: str, type_name: str, output_dir: str):
 
 def main():
     args = parseCli()
+    
+    # Debug print args
+    print("\nCommand Line Arguments:")
+    print(f"Files: {args.files}")
+    print(f"Output Directory: {args.output_dir}")
+    print(f"ASN.1 Type: {args.type}")
+    print()
 
     # Parse ASN.1 files
     print("Parsing ASN.1 files ...")
@@ -62,6 +70,27 @@ def main():
     asn1_classes = extractAsn1ClassesFromDocs(asn1_docs)
 
     checkTypeMembersInAsn1(asn1_types)
+    
+    # Add debug printing
+    print("\nDEBUG OUTPUT:")
+    print("\nASN.1 Documents:")
+    print(json.dumps(asn1_docs, indent=2))
+    
+    print("\nASN.1 Raw Definitions:")
+    print(json.dumps(asn1_raw, indent=2))
+    
+    print("\nASN.1 Types:")
+    print(json.dumps(asn1_types, indent=2))
+    
+    print("\nASN.1 Values:")
+    print(json.dumps(asn1_values, indent=2))
+    
+    print("\nASN.1 Sets:")
+    print(json.dumps(asn1_sets, indent=2))
+    
+    print("\nASN.1 Classes:")
+    print(json.dumps(asn1_classes, indent=2))
+    print("\nEND DEBUG OUTPUT\n")
 
     # Generate JSON schema files
     jinja_template = loadJinjaTemplate()

@@ -1,0 +1,77 @@
+MessageFrame DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+-- Import external types, assumed to be defined elsewhere
+DSRCmsgID                ::= INTEGER (0..32767)
+BasicSafetyMessage       ::= SEQUENCE { ... }
+MapData                  ::= SEQUENCE { ... }
+SPAT                     ::= SEQUENCE { ... }
+CommonSafetyRequest      ::= SEQUENCE { ... }
+EmergencyVehicleAlert    ::= SEQUENCE { ... }
+IntersectionCollision    ::= SEQUENCE { ... }
+NMEAcorrections          ::= SEQUENCE { ... }
+ProbeDataManagement      ::= SEQUENCE { ... }
+ProbeVehicleData         ::= SEQUENCE { ... }
+RoadSideAlert            ::= SEQUENCE { ... }
+RTCMcorrections          ::= SEQUENCE { ... }
+SignalRequestMessage     ::= SEQUENCE { ... }
+SignalStatusMessage      ::= SEQUENCE { ... }
+TravelerInformation      ::= SEQUENCE { ... }
+PersonalSafetyMessage    ::= SEQUENCE { ... }
+TestMessage00            ::= SEQUENCE { ... }
+TestMessage01            ::= SEQUENCE { ... }
+TestMessage02            ::= SEQUENCE { ... }
+TestMessage03            ::= SEQUENCE { ... }
+TestMessage04            ::= SEQUENCE { ... }
+TestMessage05            ::= SEQUENCE { ... }
+TestMessage06            ::= SEQUENCE { ... }
+TestMessage07            ::= SEQUENCE { ... }
+TestMessage08            ::= SEQUENCE { ... }
+TestMessage09            ::= SEQUENCE { ... }
+TestMessage10            ::= SEQUENCE { ... }
+TestMessage11            ::= SEQUENCE { ... }
+TestMessage12            ::= SEQUENCE { ... }
+TestMessage13            ::= SEQUENCE { ... }
+TestMessage14            ::= SEQUENCE { ... }
+TestMessage15            ::= SEQUENCE { ... }
+
+-- The core MessageFrame type
+MessageFrame ::= SEQUENCE {
+    messageId DSRCmsgID,
+    value     CHOICE {
+        basicSafetyMessage           BasicSafetyMessage,
+        mapData                      MapData,
+        spat                         SPAT,
+        commonSafetyRequest          CommonSafetyRequest,
+        emergencyVehicleAlert        EmergencyVehicleAlert,
+        intersectionCollision        IntersectionCollision,
+        nmeaCorrections              NMEAcorrections,
+        probeDataManagement          ProbeDataManagement,
+        probeVehicleData             ProbeVehicleData,
+        roadSideAlert                RoadSideAlert,
+        rtcmCorrections              RTCMcorrections,
+        signalRequestMessage         SignalRequestMessage,
+        signalStatusMessage          SignalStatusMessage,
+        travelerInformation          TravelerInformation,
+        personalSafetyMessage        PersonalSafetyMessage,
+        testMessage00                TestMessage00,
+        testMessage01                TestMessage01,
+        testMessage02                TestMessage02,
+        testMessage03                TestMessage03,
+        testMessage04                TestMessage04,
+        testMessage05                TestMessage05,
+        testMessage06                TestMessage06,
+        testMessage07                TestMessage07,
+        testMessage08                TestMessage08,
+        testMessage09                TestMessage09,
+        testMessage10                TestMessage10,
+        testMessage11                TestMessage11,
+        testMessage12                TestMessage12,
+        testMessage13                TestMessage13,
+        testMessage14                TestMessage14,
+        testMessage15                TestMessage15
+        -- Extensible for future messages
+    }
+    -- Extensible for future fields
+}
+
+END

@@ -23,11 +23,11 @@ RUN apt-get update && \
 
 # install asnc1c
 WORKDIR /setup
-RUN git clone https://github.com/usdot-fhwa-stol/usdot-asn1c.git asn1c
+RUN git clone https://github.com/gurus-infotech/usdot-asn1c.git
 WORKDIR /setup/asn1c
 ARG ASN1C_COMMIT=4d962f89b318dc5e07d9c4afa3f5389341b6fb92
 RUN git checkout ${ASN1C_COMMIT} && \
-    (test -f configure || autoreconf -iv) && \
+    test -f configure || autoreconf -iv && \
     ./configure && \
     make && \
     make install
@@ -40,5 +40,5 @@ RUN rm -rf /setup
 RUN mkdir input
 RUN mkdir output
 WORKDIR /output
-RUN echo "asn1c \$(find /input -name '*.asn' | sort) -fcompound-names -no-gen-BER --no-gen-XER -no-gen-OER -no-gen-example -gen-UPER -gen-JER" > /asn1c.sh
+RUN echo "asn1c \$(find /input -name '*.asn' | sort) -fcompound-names -no-gen-BER --no-gen-XER -no-gen-JER -no-gen-OER -no-gen-example -gen-UPER" > /asn1c.sh
 CMD ["/bin/bash", "/asn1c.sh"]

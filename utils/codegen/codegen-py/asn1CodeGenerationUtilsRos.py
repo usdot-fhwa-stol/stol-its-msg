@@ -251,7 +251,6 @@ def parseAsn1Files(files: List[str]) -> Tuple[Dict, Dict[str, str]]:
 
     return asn1_docs, asn1_raw
 
-
 def docForAsn1Type(asn1_type: str, asn1_docs: Dict) -> Optional[str]:
     """Finds the ASN1 document where a specific type is defined.
 
@@ -268,7 +267,6 @@ def docForAsn1Type(asn1_type: str, asn1_docs: Dict) -> Optional[str]:
             return doc
 
     return None
-
 
 def extractAsn1TypesFromDocs(asn1_docs: Dict) -> Dict[str, Dict]:
     """Extracts all parsed ASN1 type information from multiple ASN1 documents.

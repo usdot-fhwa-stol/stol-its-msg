@@ -1,0 +1,115 @@
+CommonSafetyRequest DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+CommonSafetyRequest ::= SEQUENCE {
+   timeStamp   MinuteOfTheYear             OPTIONAL,
+   msgCnt      MsgCount                    OPTIONAL, 
+   id          TemporaryID                 OPTIONAL, -- targeted remote device              
+   requests    RequestedItemList,
+   -- Note: Above no longer uses the same request as probe management
+   regional    SEQUENCE (SIZE(1..4)) OF 
+               RegionalExtension {{Reg-CommonSafetyRequest}} OPTIONAL,
+   ...
+   }
+
+
+
+
+Reg-CommonSafetyRequest    REG-EXT-ID-AND-TYPE ::= { ... }
+RegionId ::= INTEGER (0..255)
+MsgCount ::= INTEGER (0..127)
+
+TemporaryID ::= OCTET STRING (SIZE(4))
+
+REG-EXT-ID-AND-TYPE ::= CLASS {
+   &id     RegionId UNIQUE,
+   &Type
+   } WITH SYNTAX {&Type IDENTIFIED BY &id}
+
+RequestedItemList ::= SEQUENCE (SIZE(1..32)) OF  RequestedItem
+
+
+RequestedItem ::= ENUMERATED {
+   reserved,
+   itemA,
+        -- consisting of 2 elements: 
+        -- lights          ExteriorLights 
+        -- lightBar        LightbarInUse 
+   
+   itemB,
+        -- consisting of: 
+        -- wipers  a SEQUENCE
+   
+   itemC,
+        -- consisting of: 
+        -- brakeStatus  BrakeSystemStatus 
+
+   itemD,
+        -- consisting of 2 elements: 
+        -- brakePressure   BrakeAppliedPressure   
+        -- roadFriction    CoefficientOfFriction   
+      
+   itemE,
+        -- consisting of 4 elements: 
+        -- sunData         SunSensor                
+        -- rainData        RainSensor                   
+        -- airTemp         AmbientAirTemperature     
+        -- airPres         AmbientAirPressure     
+   
+   itemF,
+        -- consisting of: 
+        -- steering  a SEQUENCE 
+    
+   itemG,
+        -- consisting of: 
+        -- accelSets a SEQUENCE 
+
+   itemI,
+        -- consisting of: 
+        -- fullPos         FullPositionVector       
+   
+   itemJ,
+        -- consisting of: 
+        -- position2D      Position2D  
+
+   itemK,
+        -- consisting of: 
+        -- position3D      Position3D 
+ 
+   itemL,
+        -- consisting of 2 elements: 
+        -- speedHeadC      SpeedandHeadingConfidence     
+   
+   itemM,
+        -- consisting of: 
+        -- vehicleData a SEQUENCE   
+   
+   itemN,
+        -- consisting of: 
+        -- vehicleIdent   VehicleIdent 
+   
+   itemO,
+        -- consisting of: 
+        -- weatherReport a SEQUENCE   
+   
+   itemP,
+        -- consisting of: 
+        -- breadcrumbs    PathHistory 
+   
+   itemQ,
+        -- consisting of: 
+        -- GNSSStatus      GNSSstatus      
+      
+   ...    
+   }
+
+RegionalExtension {REG-EXT-ID-AND-TYPE : Set} ::= SEQUENCE {
+   regionId     REG-EXT-ID-AND-TYPE.&id( {Set} ),
+   regExtValue  REG-EXT-ID-AND-TYPE.&Type( {Set}{@regionId} )
+   }
+
+   
+   
+   
+MinuteOfTheYear ::= INTEGER (0..527040) 
+   -- the value 527040 shall be used for invalid
+
+END
