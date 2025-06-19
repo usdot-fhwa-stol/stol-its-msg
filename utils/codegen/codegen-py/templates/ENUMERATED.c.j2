@@ -1,0 +1,17 @@
+
+
+const char* {{struct_name}}_to_string(e_{{struct_name}} obj)={
+    switch(obj){
+        {%- for member in members %}
+        case {{struct_name | upper}}_{{ member.name}}: return "{{member.name}}";
+        {%- endfor %}
+        default: return "unknown";  // for extensibility
+    }
+    
+};
+
+
+cJSON* {{ struct_name}}_to_json(const e_{{ struct_name }}* obj) {
+    if(!obj) return cJSON_CreateNull();
+    return cJSON_CreateString({{struct_name}}_to_string(*obj));
+}

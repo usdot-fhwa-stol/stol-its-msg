@@ -1,0 +1,20 @@
+
+
+
+cJSON* {{ struct_name }}_to_json(const {{ struct_name }}_t* obj) {
+    if (!obj || !obj->buf || obj->size == 0) {
+        return cJSON_CreateNull();
+    }
+
+    // Allocate null-terminated string
+    char* str = (char*)calloc(obj->size + 1, sizeof(char));
+    if (!str) return NULL;
+
+    memcpy(str, obj->buf, obj->size);
+    str[obj->size] = '\0';
+
+    cJSON* json = cJSON_CreateString(str);
+    free(str);
+    return json;
+}
+

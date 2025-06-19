@@ -1,0 +1,29 @@
+typedef {{c_type}} {{ struct_name }}_t;
+
+const char* {{struct_name}}_names[]={
+    {%- for member in members %}
+    "{{ member.name }}",
+    {%- endfor %}
+};
+
+cJSON* {{ struct_name}}_to_json(const {{ struct_name }}_t* obj) {
+    if(!obj || !obj->buf || obj->size == 0) {
+        return cJSON_CreateNull();
+    }
+    int bit_index = -1;
+    size_t total_bits = obj->size * 8 - obj->bits_unused;
+
+    // Find the index of the bit set to 1
+    for (size_t i = 0; i < total_bits; ++i) {
+        size_t byte_index = i / 8;
+        size_t bit_pos = 7 - (i % 8);  // ASN.1 is big-endian bit ordering
+        if (obj->buf[byte_index] & (1 << bit_pos)) {
+            bit_index = (int)i;
+            break;
+        }
+    }
+    if (bit_index >= 0 && bit_index < {{members | length}}) {
+        return cJSON_CreateString({{struct_name}}_names[bit_index]);
+    }
+    return cJSON_CreateNull();  // Unknown or invalid
+}
