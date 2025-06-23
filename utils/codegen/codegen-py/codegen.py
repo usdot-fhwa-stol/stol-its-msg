@@ -1,5 +1,6 @@
 from asn1CodeGenerationUtils import *
 from jinja2 import Environment, FileSystemLoader
+from asn1ToConversionHeader import loadJinjaTemplates
 import json
 import logging
 import os
@@ -24,7 +25,7 @@ def log_error(message):
 def log_exception(e):
     logging.exception(e)
 
-log_info("Starting ASN.1 code generation")
+
 
 
 name="TestMessage01"
@@ -37,41 +38,14 @@ asn1_values = extractAsn1ValuesFromDocs(asn1_docs)
 asn1_sets = extractAsn1SetsFromDocs(asn1_docs)
 asn1_classes = extractAsn1ClassesFromDocs(asn1_docs)
 
-with open("out.json","w") as f:
-    json.dump(asn1_docs,f,indent=4)
-
-with open("types.json","w") as f:
-    json.dump(asn1_types,f,indent=4)
-
-with open("values.json","w") as f:
-    json.dump(asn1_values,f,indent=4)
-with open("sets.json","w") as f:
-    json.dump(asn1_sets,f,indent=4)
-with open("classes.json","w") as f:
-    json.dump(asn1_classes,f,indent=4)
-
-asn1_types["OpenType"]={
-    "type":"INTEGER",
-    "restricted-to":[
-        [0,1]
-    ]
-}
-
 
 """
     Loading templates and setting up the environment
 """
 log_info("Loading templates")
-env=Environment(loader=FileSystemLoader("./templates"))
-templates={
-    "SEQUENCE":env.get_template("SEQUENCE.c.j2"),
-    "BIT_STRING":env.get_template("BIT_STRING.c.j2"),
-    "ENUMERATED":env.get_template("ENUMERATED.c.j2"),
-    "IA5String":env.get_template("IA5STRING.c.j2"),
-    "OCTET_STRING":env.get_template("OCTET_STRING.c.j2"),
-    "CHOICE":env.get_template("CHOICE.c.j2"),
-    "SEQUENCE_OF":env.get_template("SEQUENCEOF.c.j2"),
-}
+
+
+templates=loadJinjaTemplates()
 
 
 """

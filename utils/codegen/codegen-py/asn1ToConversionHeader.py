@@ -67,12 +67,13 @@ def loadJinjaTemplates() -> Dict[str, jinja2.environment.Template]:
     template_dir = os.path.join(os.path.dirname(__file__), "templates")
     jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir), trim_blocks=False)
     jinja_templates = {}
-    jinja_templates["CHOICE"] = jinja_env.get_template("convertChoiceType.h.jinja2")
-    jinja_templates["CUSTOM"] = jinja_env.get_template("convertCustomType.h.jinja2")
-    jinja_templates["ENUMERATED"] = jinja_env.get_template("convertEnumeratedType.h.jinja2")
-    jinja_templates["PRIMITIVE"] = jinja_env.get_template("convertPrimitiveType.h.jinja2")
-    jinja_templates["SEQUENCE"] = jinja_env.get_template("convertSequenceType.h.jinja2")
-    jinja_templates["SEQUENCE OF"] = jinja_env.get_template("convertSequenceOfType.h.jinja2")
+    jinja_templates["BIT STRING"] = jinja_env.get_template("BIT_STRING.c.j2")
+    jinja_templates["CHOICE"] = jinja_env.get_template("CHOICE.c.j2")
+    jinja_templates["ENUMERATED"] = jinja_env.get_template("ENUMERATED.c.j2")
+    jinja_templates["IA5STRING"] = jinja_env.get_template("IA5STRING.c.j2")
+    jinja_templates["OCTECT STRING"] = jinja_env.get_template("OCTET_STRING.c.j2")
+    jinja_templates["SEQUENCE"] = jinja_env.get_template("SEQUENCE.c.j2")
+    jinja_templates["SEQUENCE OF"] = jinja_env.get_template("SEQUENCEOF.c.j2")
 
     return jinja_templates
 
