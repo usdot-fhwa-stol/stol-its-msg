@@ -6,15 +6,16 @@ cJSON* {{ struct_name }}_to_json(const {{ struct_name }}_t* obj) {
         return cJSON_CreateNull();
     }
 
-    // Allocate null-terminated string
-    char* str = (char*)calloc(obj->size + 1, sizeof(char));
-    if (!str) return NULL;
+    // Hex string: 2 characters per byte + 1 null terminator
+    char* hexStr = (char*)calloc(obj->size * 2 + 1, sizeof(char));
+    if (!hexStr) return NULL;
 
-    memcpy(str, obj->buf, obj->size);
-    str[obj->size] = '\0';
+    for (size_t i = 0; i < obj->size; ++i) {
+        sprintf(hexStr + i * 2, "%02X", obj->buf[i]);
+    }
 
-    cJSON* json = cJSON_CreateString(str);
-    free(str);
+    cJSON* json = cJSON_CreateString(hexStr);
+    free(hexStr);
     return json;
 }
 

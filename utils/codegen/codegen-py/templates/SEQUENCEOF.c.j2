@@ -5,24 +5,15 @@ cJSON* {{ struct_name }}_to_json(const {{ struct_name }}_t* obj) {
     if (!json_array) return NULL;
 
     for (size_t i = 0; i < obj->count; i++) {
-        {% if element.type == 'simple' %}
-            cJSON* item = NULL;
-            // Convert simple element (e.g. integer, double, string)
-            item = cJSON_CreateNumber(obj->list[i]);  {# Or other cJSON_Create* depending on type #}
-            if (!item) {
-                cJSON_Delete(json_array);
-                return NULL;
-            }
-            cJSON_AddItemToArray(json_array, item);
-        {% elif element.type == 'complex' %}
-            // Convert complex element recursively
-            cJSON* item = {{ element.struct_name }}_to_json(&obj->list[i]);
-            if (!item) {
-                cJSON_Delete(json_array);
-                return NULL;
-            }
-            cJSON_AddItemToArray(json_array, item);
-        {% endif %}
+        
+        // Convert complex element recursively
+        cJSON* item = {{ element.struct_name }}_to_json(&obj->list[i]);
+        if (!item) {
+            cJSON_Delete(json_array);
+            return NULL;
+        }
+        cJSON_AddItemToArray(json_array, item);
+
     }
 
     return json_array;

@@ -1,6 +1,11 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 
+asn1/raw/carma_j2735
+etsi_its_coding
+etsi_its_conversion
+etsi_its_testing
+
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -178,3 +183,6 @@ pyrightconfig.json
 # ignore ros2 bagfiles
 metadata.yaml
 *.db3
+
+
+

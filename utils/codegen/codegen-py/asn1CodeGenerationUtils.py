@@ -39,6 +39,9 @@ def validateAsn1Type(asn1_type: Dict):
         if key not in asn1_type:
             raise ValueError(f"Missing required key: {key}")
 
+def validate_name(name):
+    return name.replace(" ","_").replace("-","_")
+
 def parseAsn1Files(files: List[str]) -> Tuple[Dict, Dict[str, str]]:
     """Parses ASN1 files.
 
