@@ -1,0 +1,21 @@
+
+
+
+cJSON* {{ struct_name }}_to_json(const {{ struct_name }}_t* obj) {
+    if (!obj || !obj->buf || obj->size == 0) {
+        return cJSON_CreateNull();
+    }
+
+    // Hex string: 2 characters per byte + 1 null terminator
+    char* hexStr = (char*)calloc(obj->size * 2 + 1, sizeof(char));
+    if (!hexStr) return NULL;
+
+    for (size_t i = 0; i < obj->size; ++i) {
+        sprintf(hexStr + i * 2, "%02X", obj->buf[i]);
+    }
+
+    cJSON* json = cJSON_CreateString(hexStr);
+    free(hexStr);
+    return json;
+}
+

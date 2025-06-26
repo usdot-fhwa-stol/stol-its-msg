@@ -93,14 +93,55 @@ def adjustIncludes(parent_path: str):
     with Pool(max(1, min(ceil(os.cpu_count() * 0.8), os.cpu_count() - 1))) as pool:
         dummy = list(tqdm(pool.imap(adjustIncludesInFile, files_to_process), total=len(files_to_process), desc="Adjusting includes"))
 
+
+def adjust_ext(file):
+    print(f"Adjusting extensions of input files ...")
+    with open(file, "r") as f:
+        data=f.read()
+
+        lines=data.splitlines()
+        updated_lines=[]
+        count=0
+        while True:
+            if count>=len(lines):
+                break
+            
+            line=lines[count]
+            if "--" in line:
+                line=line.split("--")[0]
+
+            if line.strip()=="":
+                count+=1
+                continue
+
+            if line.strip()=="...":
+                temp_line=updated_lines[-1]
+                temp_line=temp_line.replace(",","")
+                updated_lines[-1]=temp_line
+                
+                pass
+            else:
+                if line.strip()=="":
+                    count+=1
+                    continue
+
+                updated_lines.append(line)
+            count+=1
+        
+
+        updated_data="\n".join(updated_lines)+"\n\n"
+
+        with open(file+"_modified", "w") as f:
+            f.write(updated_data)
+
 def main():
 
     args = parseCli()
 
     # create output directories
     output_dir = os.path.realpath(args.output_dir)
-    output_include_dir = os.path.join(args.output_dir, "include", os.path.basename(output_dir))
-    output_source_dir = os.path.join(args.output_dir, "src")
+    output_include_dir = os.path.join(args.output_dir)
+    output_source_dir = os.path.join(args.output_dir)
     os.makedirs(output_include_dir, exist_ok=True)
     os.makedirs(output_source_dir, exist_ok=True)
 
@@ -119,13 +160,19 @@ def main():
                 os.makedirs(container_output_dir, exist_ok=True)
                 asn1c_cmd_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "asn1c.sh")
 
+            print(args.files)
+
+            # adjust extensions of input files
+            # for f in args.files:
+            #     adjust_ext(f)
+
             # copy input asn1 files to temporary directory
             for f in args.files:
                 shutil.copy(f, container_input_dir)
 
             # run asn1c docker container to generate header and source files
             with open(asn1c_cmd_file, "w") as f:
-                f.write(f"asn1c $(find /input -name '*.asn' | sort) -fcompound-names -fprefix={args.type}_ -no-gen-BER -no-gen-XER -no-gen-OER -no-gen-example -gen-UPER -gen-JER")
+                f.write(f"asn1c $(find /input -name '*.asn' | sort) -fcompound-names -fprefix={args.type}_ -no-gen-BER -no-gen-XER -no-gen-JER -no-gen-OER -no-gen-example -gen-UPER")
 
             subprocess.run(["docker", "run", "--rm", "-u", f"{os.getuid()}:{os.getgid()}", "-v", f"{container_input_dir}:/input:ro", "-v", f"{container_output_dir}:/output", "-v", f"{asn1c_cmd_file}:/asn1c.sh", args.docker_image], check=True)
             os.remove(asn1c_cmd_file)
@@ -136,7 +183,7 @@ def main():
             for f in glob.glob(os.path.join(container_output_dir, "*.c")):
                 shutil.move(f, os.path.join(output_source_dir, os.path.basename(f)))
 
-    adjustIncludes(output_dir)
+    # adjustIncludes(output_dir)
 
     print(f"Applying patches ...")
     script_dir = os.path.dirname(os.path.abspath(__file__))
