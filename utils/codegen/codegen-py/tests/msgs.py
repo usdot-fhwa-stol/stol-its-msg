@@ -1,7 +1,11 @@
 import asn1tools
 
 # Structured message (as a Python dict)
-BSM1 = {
+
+messages = {
+   
+"BasicSafetyMessage" : {
+    1: {
     "messageId": 20,
     "value": {
         "coreData": {
@@ -41,9 +45,9 @@ BSM1 = {
         }
         
     }
-}
+},
 
-BSM2 = {
+2:{
   
   
     "messageId": 20,
@@ -130,10 +134,11 @@ BSM2 = {
   
 }
 
+},
 
 
-
-CSR1 = {
+"CommonSafetyRequest" : {
+    1:{
   "messageId": 21,
   "value": {
     "timeStamp": 123456,
@@ -147,10 +152,10 @@ CSR1 = {
       }
     ]
   }
-}
+},
 
 
-CSR2 = {
+2: {
     "messageId": 21,
     "value": {
         "requests": ["itemQ"],  # Last enum value from your defined set
@@ -174,8 +179,10 @@ CSR2 = {
         ]
     }
 }
+},
 
-EVA1 = {
+"EVA" : {
+    1: {
   "messageId": 21,
   "value": {
     "id": b'\xab\xcd\x12\x34',  # 4-byte TemporaryID
@@ -190,9 +197,9 @@ EVA1 = {
       }
     ]
   }
-}
+},
 
-EVA2 = {
+    2 : {
   "messageId": 21,
   "value": {
     "rsaMsg": {
@@ -229,8 +236,10 @@ EVA2 = {
     ]
   }
 }
+},
 
-IC1 = {
+"IC" : {
+    1 : {
   "messageId": 1,
   "value": {
     "msgCnt": 127,
@@ -334,9 +343,10 @@ IC1 = {
       }
     ]
   }
-}
+},
 
-IC2 = {
+
+2 : {
   "messageId": 1,
   "value": {
     "msgCnt": 0,
@@ -348,8 +358,10 @@ IC2 = {
     "eventFlag": (b'\x12\x10', 13)
   }
 }
+},
 
-MAP1 = {
+"MAP" :{
+    1 : {
     "messageId": 18,
     "value": {
         "timeStamp": 45678,
@@ -380,7 +392,7 @@ MAP1 = {
                     {
                         "laneID": 1,
                         "laneAttributes": {
-                            "directionalUse": (b'\x80', 2),  # Bit 0 set, size = 2 bits
+                            "directionalUse": (b'\x80', 2),  # Bit 0 set, size : 2 bits
                             "sharedWith": (b'\x20', 1),
                             "laneType": ("vehicle", (b'\xA0', 8))
                         },
@@ -412,9 +424,9 @@ MAP1 = {
             }
         ]
     }
-}
+},
 
-MAP2 = {
+2: {
     "messageId": 18,
     "value": {
         "timeStamp": 0,  # edge case: lowest valid time
@@ -478,8 +490,10 @@ MAP2 = {
         ]
     }
 }
+},
 
-NMEA1 = {
+"NMEA" :{
+    1 : {
     "messageId": 28,  # Arbitrary valid message ID (0–127)
     "value": {
         "timeStamp": 123456,          # MinuteOfTheYear (within 0–527040)
@@ -494,17 +508,19 @@ NMEA1 = {
             }
         ]
     }
-}
+},
 
-NMEA2 = {
+2 : {
     "messageId": 23,  # Edge case: minimum valid message ID
     "value": {
         "payload": b"$GPRMC,000000,A,0000.0000,N,00000.0000,E,0.00,0.00,010180,,,A*68"  # Minimal sentence
         # All optional fields are omitted
     }
 }
+},
 
-PSM1 = {
+"PSM" : { 
+    1:{
     "messageId": 20,
     "value": {
         "basicType": "aPEDESTRIAN",
@@ -607,9 +623,9 @@ PSM1 = {
             }
         ]
     }
-}
+},
 
-PSM2 = {
+2 : {
     "messageId": 20,
     "value": {
         "basicType": "aPEDALCYCLIST",
@@ -713,9 +729,11 @@ PSM2 = {
         ]
     }
 }
+},
 
 
-PDM1 = {
+"PDM" : {
+    1:{
     "messageId": 25,
     "value": {
         "timeStamp": 123456,
@@ -755,9 +773,9 @@ PDM1 = {
             }
         ]
     }
-}
+},
 
-PDM2 = {
+2 : {
     "messageId": 25,
     "value": {
         "sample": {
@@ -786,8 +804,10 @@ PDM2 = {
         # no regional or timeStamp included
     }
 }
+},
 
-PVD1 ={
+"PVD" :{
+    1:{
   "messageId": 37,
   "value": {
     "startVector": {
@@ -813,9 +833,9 @@ PVD1 ={
       }
     ]
   }
-}
+},
 
-PVD2 ={
+2 :{
   "messageId": 37,
   "value": {
     "timeStamp": 100000,
@@ -863,9 +883,10 @@ PVD2 ={
     ]
   }
 }
+},
 
-
-RSA1 = {
+"RSA" :{
+    1: {
     "messageId": 36,
     "value": {
         "msgCnt": 1,
@@ -884,10 +905,10 @@ RSA1 = {
             }
         }
     }
-}
+},
 
 
-RSA2 = {
+2 : {
     "messageId": 36,
     "value": {
         "msgCnt": 2,
@@ -940,8 +961,10 @@ RSA2 = {
         ]
     }
 }
+},
 
-RTCM1 = {
+"RTCM" : {
+    1:{
     "messageId": 38,
     "value": {
         "msgCnt": 5,
@@ -951,10 +974,10 @@ RTCM1 = {
             b"\x0A\x0B\x0C"
         ]
     }
-}
+},
 
 
-RTCM2 = {
+2: {
     "messageId": 38,
     "value": {
         "msgCnt": 10,
@@ -1000,8 +1023,10 @@ RTCM2 = {
         ]
     }
 }
+},
 
-SRM1 = {
+"SRM" : {
+    1:{
     "messageId": 20,
     "value": {
         "second": 45000,
@@ -1009,9 +1034,9 @@ SRM1 = {
             "id": ("stationID", 123456789)
         }
     }
-}
+},
 
-SRM2 = {
+2 : {
   "messageId": 27,
   "value": {
     "timeStamp": 345600,
@@ -1062,8 +1087,10 @@ SRM2 = {
     }
   }
 }
+},
 
-SSM1 = {
+"SSM" :{
+    1:{
   "messageId": 28,
   "value": {
     "timeStamp": 123000,
@@ -1102,9 +1129,9 @@ SSM1 = {
       }
     ]
   }
-}
+},
 
-SSM2 = {
+2 : {
   "messageId": 28,
   "value": {
     "timeStamp": 451234,
@@ -1144,125 +1171,449 @@ SSM2 = {
     ]
   }
 }
+},
 
-
-
-messages_dict={
-    "BasicSafetyMessage":{
-        "1":{
-          "coreData": {
-              "msgCnt": 25,
-              "id": b'\xF0\x3A\xD6\x10',
-              "secMark": 38283,
-              "lat": 389557079,
-              "long": -771505975,
-              "elev": 370,
-              "accuracy": {
-                  "semiMajor": 255,
-                  "semiMinor": 255,
-                  "orientation": 65535
-              },
-              "transmission": "park",
-              "speed": 0,
-              "heading": 10201,
-              "angle": -27,
-              "accelSet": {
-                  "long": 0,
-                  "lat": 0,
-                  "vert": -127,
-                  "yaw": 0
-              },
-              "brakes": {
-                  "wheelBrakes": (b'\x10', 5),
-                  "traction": "unavailable",
-                  "abs": "unavailable",
-                  "scs": "unavailable",
-                  "brakeBoost": "unavailable",
-                  "auxBrakes": "unavailable"
-              },
-              "size": {
-                  "width": 200,
-                  "length": 500
-              }
-          }
-        }
-    },
-    "TestMessage01":[
-      {
-        "header": {
-          "hostStaticId": "ABC123",
-          "targetStaticId": "XYZ987",
-          "hostBSMId": "1A2B3C4D",
-          "planId": "123e4567-e89b-12d3-a456-426614174000",
-          "timestamp": "1234567891234567891"
-        },
-        "body": {
-          "urgency": 750,
-          "isAccepted": True
-        }
-      },{
-        "header": {
-          "hostStaticId": "DEF456",
-          "targetStaticId": "UVW654",
-          "hostBSMId": "4D3C2B1A",
-          "planId": "987e6543-e21b-32d3-a456-426614174000",
-          "timestamp": "9876543219876543210"
-        },
-        "body": {
-          "urgency": 500,
-          "isAccepted": False
-        }
-      }
-    ],
-    "SPAT":[
-        {
-          "messageId": 13,
-          "value": {
-              "timeStamp": 123456,
-              "name": "SPAT_MainStreet",
-              "intersections": [
-                  {
-                      "name": "Main_St_Intersection",
-                      "id": {
-                          "region": 100,
-                          "id": 12
-                      },
-                      "revision": 5,
-                      "status": (b'\x20\x00', 14),  # IntersectionStatusObject: 14 bits, example bitmap
-                      "moy": 123456,
-                      "timeStamp": 45678,
-                      "enabledLanes": [1, 2, 3],
-                      "states": [
-                          {
-                              "movementName": "StraightThrough",
-                              "signalGroup": 1,
-                              "state-time-speed": [
-                                  {
-                                      "eventState": "protected-Movement-Allowed",
-                                      "timing": {
-                                          "startTime": 100,
-                                          "minEndTime": 1200,
-                                          "maxEndTime": 1500,
-                                          "likelyTime": 1300,
-                                          "confidence": 2,  # TimeIntervalConfidence ENUM: 2 = prec10ms
-                                          "nextTime": 1600
-                                      },
-                                      "speeds": [
-                                          {
-                                              "type": "ecoDrive",
-                                              "speed": 45,
-                                              "confidence": "prec10ms",  # ENUM as string is OK for asn1tools
-                                              "distance": 150,
-                                              "class": 1
-                                          }
-                                      ]
-                                  }
-                              ]
-                          }
-                      ]
-                  }
-              ]
-          }
-      }
-    ]
+"SPAT" :{
+    1: {
+    "messageId": 13,
+    "value": {
+        "timeStamp": 123456,
+        "name": "SPAT_MainStreet",
+        "intersections": [
+            {
+                "name": "Main_St_Intersection",
+                "id": {
+                    "region": 100,
+                    "id": 12
+                },
+                "revision": 5,
+                "status": (b'\x20\x00', 14),  # IntersectionStatusObject: 14 bits, example bitmap
+                "moy": 123456,
+                "timeStamp": 45678,
+                "enabledLanes": [1, 2, 3],
+                "states": [
+                    {
+                        "movementName": "StraightThrough",
+                        "signalGroup": 1,
+                        "state-time-speed": [
+                            {
+                                "eventState": "protected-Movement-Allowed",
+                                "timing": {
+                                    "startTime": 100,
+                                    "minEndTime": 1200,
+                                    "maxEndTime": 1500,
+                                    "likelyTime": 1300,
+                                    "confidence": 2,  # TimeIntervalConfidence ENUM: 2 : prec10ms
+                                    "nextTime": 1600
+                                },
+                                "speeds": [
+                                    {
+                                        "type": "ecoDrive",
+                                        "speed": 45,
+                                        "confidence": "prec10ms",  # ENUM as string is OK for asn1tools
+                                        "distance": 150,
+                                        "class": 1
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
 }
+},
+
+"TM00" :{
+    1 : { 
+  "messageId": 127,
+  "value": {
+    "header": {
+      "hostStaticId": "HOST123456789012",
+      "targetStaticId": "TARGET1234567890",
+      "hostBSMId": "ABC12345",
+      "planId": "550e8400-e29b-41d4-a716-446655440000",
+      "timestamp": "2024-06-24T15:30:45"
+    },
+    "body": {
+      "strategy": "PlatoonMergeStrategy",
+      "planType": "platoonFollowerJoin",
+      "urgency": 1000,
+      "location": {
+        "ecefX": 638363700,
+        "ecefY": -638363700,
+        "ecefZ": 0,
+        "timestamp": "2024-06-24T15:30:46"
+      },
+      "strategyParams": "lane:2,speed:13.5,acceleration:1.2,preferred_gap:5.5,mergeTime:8.1",
+      "trajectoryStart": {
+        "ecefX": -638363700,
+        "ecefY": 0,
+        "ecefZ": 638363700,
+        "timestamp": "2024-06-24T15:30:47"
+      },
+      "trajectory": [
+        { "offsetX": -500, "offsetY": 0, "offsetZ": 500 },
+        { "offsetX": 1, "offsetY": -1, "offsetZ": 1 }
+      ],
+      "expiration": "2024-06-24T15:31:00"
+    }
+  }
+},
+
+2 : {
+  "messageId": 0,
+  "value": {
+    "header": {
+      "hostStaticId": "H1",
+      "targetStaticId": "T1",
+      "hostBSMId": "ABCDEFGH",
+      "planId": "00000000-0000-0000-0000-000000000000",
+      "timestamp": "2024-01-01T00:00:00"
+    },
+    "body": {
+      "strategy": "S1",
+      "planType": "unknown",
+      "urgency": 0,
+      "location": {
+        "ecefX": 0,
+        "ecefY": 0,
+        "ecefZ": 0,
+        "timestamp": "2024-01-01T00:00:01"
+      },
+      "strategyParams": "a!"
+    }
+  }
+}
+},
+
+"TM01" :{
+    1: {
+  "messageId": 8,
+  "value": {
+    "header": {
+      "hostStaticId": "HOST_UNIT_001234",
+      "targetStaticId": "TARGET_UNIT_998877",
+      "hostBSMId": "BSMID001",
+      "planId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "timestamp": "2024-06-24T18:45:30"
+    },
+    "body": {
+      "urgency": 1000,
+      "isAccepted": True
+    }
+  }
+},
+
+2 : {
+  "messageId": 8,
+  "value": {
+    "header": {
+      "hostStaticId": "H1",
+      "targetStaticId": "T2",
+      "hostBSMId": "ABCDEFGH",
+      "planId": "00000000-0000-0000-0000-000000000000",
+      "timestamp": "2024-01-01T00:00:00"
+    },
+    "body": {
+      "urgency": 0,
+      "isAccepted": False
+    }
+  }
+}
+},
+
+"TM02" :{
+    1:{
+  "messageId": 2,
+  "value": {
+    "header": {
+      "hostStaticId": "HOST_ECU_123456",
+      "targetStaticId": "TARGET_UNIT_999",
+      "hostBSMId": "BSM12345",
+      "planId": "123e4567-e89b-12d3-a456-426614174000",
+      "timestamp": "2025-06-24T17:30:00"
+    },
+    "body": {
+      "location": {
+        "ecefX": 638363700,
+        "ecefY": -638363700,
+        "ecefZ": 0,
+        "timestamp": "2025-06-24T17:30:01"
+      },
+      "trajectory": [
+        { "offsetX": 500, "offsetY": -500, "offsetZ": 0 },
+        { "offsetX": -100, "offsetY": 250, "offsetZ": 20 },
+        { "offsetX": 0, "offsetY": 0, "offsetZ": -50 }
+      ]
+    }
+  }
+},
+
+2 : {
+  "messageId": 2,
+  "value": {
+    "header": {
+      "hostStaticId": "H1",
+      "targetStaticId": "T2",
+      "hostBSMId": "ABCDEFGH",
+      "planId": "00000000-0000-0000-0000-000000000000",
+      "timestamp": "2023-01-01T00:00:00"
+    },
+    "body": {
+      "location": {
+        "ecefX": -638363700,
+        "ecefY": 638363700,
+        "ecefZ": -1,
+        "timestamp": "2023-01-01T00:00:01"
+      },
+      "trajectory": []
+    }
+  }
+}
+},
+
+"TM03" : {
+    1: {
+    "messageId": 3,
+    "value": {
+        "header": {
+            "hostStaticId": "HOST_STATIC_ID_16",
+            "targetStaticId": "TARGET_STATIC_15",
+            "hostBSMId": "ABCDEFGH",
+            "planId": "123e4567-e89b-12d3-a456-426614174000",
+            "timestamp": "2025-06-24T17:45:00"
+        },
+        "body": {
+            "strategy": "KeepRightAndAccelerateToMergeZoneQuickly",
+            "operationParams": "max-speed:27.5;gap:1.5;acceleration:3.2;confidence:high;mergePoint:5;lane:2"
+        }
+    }
+},
+
+2 : {
+    "messageId": 3,
+    "value": {
+        "header": {
+            "hostStaticId": "H1",
+            "targetStaticId": "T1",
+            "hostBSMId": "B1234567",
+            "planId": "00000000-0000-0000-0000-000000000000",
+            "timestamp": "2023-01-01T00:00:00"
+        },
+        "body": {
+            "strategy": "Go",
+            "operationParams": "ok"
+        }
+    }
+}
+},
+
+"TM04" : {
+    1 : {
+    "messageId": 4,
+    "value": {
+        "header": {
+            "year": 4095,
+            "timeStamp": 527040,
+            "secMark": 65535,
+            "msgIssueRevision": 127
+        },
+        "regional": 
+            {
+                "regionId": 1,
+                "regExtValue": b"\xDE\xAD\xBE\xEF"  # placeholder for custom extension bytes
+            }
+        
+    }
+},
+
+2 : {
+    "messageId": 4,
+    "value": {
+        # both 'header' and 'regional' omitted as OPTIONAL
+    }
+}
+},
+
+"TM05" :{
+    1: {
+    "messageId": 25,
+    "value": {
+        "header": {
+            "year": 2023,
+            "timeStamp": 263520,     # Mid-year (~June)
+            "secMark": 32768,        # Half of DSecond range
+            "msgIssueRevision": 64   # Mid-point of MsgCount
+        },
+        "regional": {
+            "regionId": 10,          # Hypothetical valid region ID
+            "regExtValue": b"\x01\x23\x45\x67"  # Example payload
+        }
+    }
+},
+
+2 : {
+    "messageId": 127,  # Max of DSRCmsgID
+    "value": {
+        # Omitting header to test optional field handling
+        "regional": {
+            "regionId": 255,         # Max valid region ID
+            "regExtValue": b"\xFF\xFF\xFF\xFF"  # All-byte edge case
+        }
+    }
+}
+},
+
+"TM06" : {
+    1:{
+    "messageId": 42,
+    "value": {
+        "header": {
+            "year": 2024,
+            "timeStamp": 123456,     # A valid minute of the year
+            "secMark": 50000,        # A valid second within the year
+            "msgIssueRevision": 33   # A valid MsgCount
+        },
+        "regional": {
+            "regionId": 22,                      # Arbitrary regionId
+            "regExtValue": b"\xCA\xFE\xBA\xBE"   # Random byte pattern for testing
+        }
+    }
+},
+
+2 : {
+    "messageId": 0,  # Lowest valid DSRCmsgID
+    "value": {
+        # Header is optional and omitted here
+        "regional": {
+            "regionId": 255,                   # Max region ID
+            "regExtValue": b"\x00" * 8         # Minimal test payload (8 null bytes)
+        }
+    }
+}
+},
+
+"TM07" :{
+    1: {
+    "messageId": 7,
+    "value": {
+        "header": {
+            "year": 2025,
+            "timeStamp": 345600,     # Represents ~240th day of the year
+            "secMark": 45000,        # ~12.5 hours into the day
+            "msgIssueRevision": 100
+        },
+        "regional": {
+            "regionId": 44,
+            "regExtValue": b"\xAB\xCD\xEF"  # Random example payload
+        }
+    }
+},
+2 : {
+    "messageId": 0,  # Minimum valid value for DSRCmsgID
+    "value": {
+        "regional": {
+            "regionId": 0,                   # Minimum regionId
+            "regExtValue": b""               # Empty payload (still valid if handled gracefully)
+        }
+    }
+}
+},
+
+"TM08" :{
+    1: {
+    "messageId": 8,
+    "value": {
+        "header": {
+            "year": 2024,
+            "timeStamp": 123456,           # Mid-year value
+            "secMark": 32000,              # ~9 hours into the day
+            "msgIssueRevision": 42
+        },
+        "regional": {
+            "regionId": 128,
+            "regExtValue": b"\xDE\xAD\xBE\xEF"  # Example region-specific payload
+        }
+    }
+},
+
+2 : {
+    "messageId": 0,  # Edge: lowest valid DSRCmsgID
+    "value": {
+        "regional": {
+            "regionId": 0,           # Edge: minimum valid RegionId
+            "regExtValue": b""       # Edge: empty but valid extension
+        }
+    }
+}
+},
+
+"TM09" :{
+    1: {
+    "messageId": 9,
+    "value": {
+        "header": {
+            "year": 2025,
+            "timeStamp": 520000,          # Edge: near upper bound of MinuteOfTheYear
+            "secMark": 65535,             # Max DSecond
+            "msgIssueRevision": 127       # Max MsgCount
+        },
+        "regional": {
+            "regionId": 255,              # Max RegionId
+            "regExtValue": b'\xFE\xED\xFA\xCE'  # Sample payload
+        }
+    }
+},
+
+2 : {
+    "messageId": 1,  # Low-end DSRCmsgID
+    "value": {
+        "regional": {
+            "regionId": 0,                # Min RegionId
+            "regExtValue": b''            # Edge: empty extension data
+        }
+    }
+}
+},
+
+"TM10" :{
+    1: {
+    "messageId": 10,
+    "value": {
+        "header": {
+            "year": 4095,                  # Max DYear
+            "timeStamp": 527040,           # Max MinuteOfTheYear
+            "secMark": 65535,              # Max DSecond
+            "msgIssueRevision": 127        # Max MsgCount
+        },
+        "regional": {
+            "regionId": 255,               # Max RegionId
+            "regExtValue": b'\xCA\xFE\xBA\xBE'  # Sample payload
+        }
+    }
+},
+
+2 : {
+    "messageId": 0,  # Min DSRCmsgID
+    "value": {
+        "regional": {
+            "regionId": 0,                 # Min RegionId
+            "regExtValue": b''             # Edge: empty extension
+        }
+    }
+}
+}
+}
+
+
+
+# Compile ASN.1 schema with PER encoding
+spec = asn1tools.compile_files('messages/TestMessage10.asn1', 'per')
+
+# Encode into UPER (Unaligned Packed Encoding Rules)
+encoded = spec.encode('MessageFrame', messages['TM10'][1])
+
+# Print hex string
+print(encoded)

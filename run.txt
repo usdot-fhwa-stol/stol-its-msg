@@ -1,2 +1,0 @@
-python3 utils/codegen/asn1ToC/asn1ToC.py asn1/raw/carma_j2735/TestMessage01.asn -t carma_j2735 -o etsi_its_coding/etsi_its_carma_j2735_coding
-python3 utils/codegen/codegen-py/codeGeneration.py

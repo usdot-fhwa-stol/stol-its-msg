@@ -9,28 +9,11 @@ RUN apt-get update && \
         wget \
     && rm -rf /var/lib/apt/lists/*
 
-# install asn1c dependencies
-RUN apt-get update && \
-    apt-get install -y \
-        automake \
-        bison \
-        flex \
-        libtool \
-        m4 \
-    && rm -rf /var/lib/apt/lists/*
 
-# install asnc1c
-WORKDIR /setup
-RUN git clone https://github.com/usdot-fhwa-stol/usdot-asn1c.git asn1c
-WORKDIR /setup/asn1c
-ARG ASN1C_COMMIT=4d962f89b318dc5e07d9c4afa3f5389341b6fb92
-RUN git checkout ${ASN1C_COMMIT} && \
-    test -f configure || autoreconf -iv && \
-    ./configure && \
-    make && \
-    make install
+RUN apt-get install -y libcjson-dev
 
-RUN apt-get install libcjson-dev
+# install gcc compiler
+RUN apt-get install -y gcc
 
 # cleanup
 WORKDIR /
@@ -38,4 +21,7 @@ RUN rm -rf /setup
 
 # command
 COPY ./etsi_its_coding /
-COPY ./etsi_conversion /
+COPY ./etsi_its_testing /
+
+RUN gcc -o decode *.c -lcjson
+RUN ./decode

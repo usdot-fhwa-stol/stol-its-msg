@@ -38,6 +38,7 @@ def load_jinja_templates():
 def main():
 
     args = parseCli()
+    tag="carma_j2735_"
 
     templates=load_jinja_templates()
 
@@ -95,7 +96,7 @@ def main():
             print(f"Encoded message for {name}: {c_array}") 
 
             context={
-                "schema_name": name,
+                "schema_name": tag+name,
                 "message": msg,
                 "encoded_message": encoded_message,
                 "c_array": "{"+c_array+"}",

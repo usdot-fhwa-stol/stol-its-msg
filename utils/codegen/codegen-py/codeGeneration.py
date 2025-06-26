@@ -144,7 +144,7 @@ def process_primitive(asn1_name,asn1_info,code):
 
         res={
             "type":"complex",
-            "struct_name":validate_name(asn1_name),
+            "struct_name":tag+validate_name(asn1_name),
             "function_name":"cJSON_AddItemToObject"
         }
 
@@ -181,7 +181,7 @@ def process_primitive(asn1_name,asn1_info,code):
         res={
             "type":"complex",
             "asn1_type":"char*",
-            "struct_name":validate_name(asn1_name),
+            "struct_name":tag+validate_name(asn1_name),
             "function_name":"cJSON_AddItemToObject"
         }
         print(f"OCTET STRING: {asn1_name} res: {res}")
@@ -256,7 +256,7 @@ def process_complex(asn1_name,asn1_info,asn1_types,asn1_values,asn1_classes,code
         
 
         context={
-            "struct_name":validate_name(asn1_name),
+            "struct_name":tag+validate_name(asn1_name),
             "asn1_type":asn1_name.capitalize(),
             "members":out,
         }
@@ -280,7 +280,7 @@ def process_complex(asn1_name,asn1_info,asn1_types,asn1_values,asn1_classes,code
 
         res={
             "type":"complex",
-            "struct_name":validate_name(asn1_name),
+            "struct_name":tag+validate_name(asn1_name),
             "asn1_type":asn1_info,
             "function_name":"cJSON_AddItemToObject",
         }
@@ -339,7 +339,7 @@ def process_complex(asn1_name,asn1_info,asn1_types,asn1_values,asn1_classes,code
 
         return {
             "type":"complex",
-            "struct_name":validate_name(asn1_name),
+            "struct_name":tag+validate_name(asn1_name),
             "asn1_type":asn1_info,
             "function_name":"cJSON_AddItemToObject",
             "element_type":res["struct_name"],
@@ -374,7 +374,7 @@ def process_complex(asn1_name,asn1_info,asn1_types,asn1_values,asn1_classes,code
         res={
             "type":"complex",
             "asn1_type":"char*",
-            "struct_name":validate_name(asn1_name),
+            "struct_name":tag+validate_name(asn1_name),
             "function_name":"cJSON_AddItemToObject"
         }
 
@@ -447,7 +447,7 @@ def process_complex(asn1_name,asn1_info,asn1_types,asn1_values,asn1_classes,code
 
         res={
             "type":"complex",
-            "struct_name":validate_name(asn1_name),
+            "struct_name":tag+validate_name(asn1_name),
             "asn1_type":asn1_info,
             "function_name":"cJSON_AddItemToObject",
         }
