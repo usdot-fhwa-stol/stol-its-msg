@@ -7,8 +7,6 @@ default:
     - apk add bash python3 py3-pip
     - pip3 install -r ./utils/codegen/codegen-py/requirements.txt --break-system-packages
     - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
-    - ./asn1/external/download.sh
-    - ./asn1/patches/patch.sh
 
 variables:
   DOCKER_DRIVER: overlay2
@@ -39,7 +37,7 @@ asn1c-docker:
         docker push ${_ASN1C_IMAGE_LATEST}
       fi
 
-etsi_its_carma_j2735_coding:
+stol_its_carma_j2735_coding:
   stage: asn1c
   needs: ["asn1c-docker"]
   script:
@@ -47,28 +45,28 @@ etsi_its_carma_j2735_coding:
       utils/codegen/asn1ToC/asn1ToC.py
       asn1/raw/carma_j2735/J2735_201603.asn
       -t carma_j2735
-      -o etsi_its_coding/etsi_its_carma_j2735_coding
+      -o stol_its_coding/stol_its_carma_j2735_coding
       -td /builds/$CI_PROJECT_PATH/tmp
       -di ${_ASN1C_CI_IMAGE}
     - rm -rf /builds/$CI_PROJECT_PATH/tmp
     - if [[ ! -z "$(git status --porcelain)" ]]; then echo "Code generation script resulted in changes to the repository" && git diff; exit 1; fi
 
-etsi_its_carma_j2735_msgs:
+stol_its_carma_j2735_msgs:
   stage: JSON Schema
   script:
     - >
       utils/codegen/codegen-py/asn1ToJsonSchema.py
       asn1/raw/carma_j2735/TestMessage01.asn
       -t carma_j2735
-      -o etsi_its_msgs/etsi_its_its_carma_j2735_msgs/msg
+      -o stol_its_msgs/stol_its_its_carma_j2735_msgs/msg
     - if [[ ! -z "$(git status --porcelain)" ]]; then echo "Code generation script resulted in changes to the repository" && git diff; exit 1; fi
 
-etsi_its_carma_j2735_conversion:
+stol_its_carma_j2735_conversion:
   stage: Conversion Headers
   script:
     - >
       utils/codegen/codegen-py/asn1ToConversionHeader.py
       asn1/raw/carma_j2735/TestMessage01.asn
       -t carma_j2735
-      -o etsi_its_conversion/etsi_its_carma_j2735_conversion/include/etsi_its_ccarma_j2735_conversion
+      -o stol_its_conversion/stol_its_carma_j2735_conversion/include/stol_its_ccarma_j2735_conversion
     - if [[ ! -z "$(git status --porcelain)" ]]; then echo "Code generation script resulted in changes to the repository" && git diff; exit 1; fi

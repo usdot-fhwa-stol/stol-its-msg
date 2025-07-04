@@ -534,7 +534,7 @@ def generate_code(file_path):
     code_set=set()
     for c in code:
         if c["type"]=="include" and c["name"] not in include_set:
-            code_file+=f"#include \"../etsi_its_coding/{tag}{c['include']}\"\n"
+            code_file+=f"#include \"../stol_its_coding/{tag}{c['include']}\"\n"
             include_set.add(c["name"])
 
     for c in code:
@@ -543,20 +543,20 @@ def generate_code(file_path):
             code_set.add(c["name"])
     
 
-    with open(f"./etsi_its_conversion/{name}.c", "w") as f:
+    with open(f"./stol_its_conversion/{name}.c", "w") as f:
         f.write(code_file)
 
 
 def main():
 
-    #  make sure the etsi_its_conversion directory exists
-    if not os.path.exists("./etsi_its_conversion"):
-        os.makedirs("./etsi_its_conversion")
+    #  make sure the stol_its_conversion directory exists
+    if not os.path.exists("./stol_its_conversion"):
+        os.makedirs("./stol_its_conversion")
 
     else:
         # empty the directory
-        for file in os.listdir("./etsi_its_conversion"):
-            file_path = os.path.join("./etsi_its_conversion", file)
+        for file in os.listdir("./stol_its_conversion"):
+            file_path = os.path.join("./stol_its_conversion", file)
             if os.path.isfile(file_path):
                 os.remove(file_path)
             elif os.path.isdir(file_path):

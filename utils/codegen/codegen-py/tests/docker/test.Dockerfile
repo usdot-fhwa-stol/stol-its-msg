@@ -20,8 +20,8 @@ WORKDIR /
 RUN rm -rf /setup
 
 # command
-COPY ./etsi_its_coding /
-COPY ./etsi_its_testing /
+COPY ./stol_its_coding /
+COPY ./stol_its_testing /
 
 RUN gcc -o decode *.c -lcjson
 RUN ./decode

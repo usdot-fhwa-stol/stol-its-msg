@@ -1,6 +1,6 @@
-# etsi_its_messages
+# stol_its_messages
 
-This repository contains a fork of the etsi_its_messages package stack allows to use standardized ITS messages for V2X communication.
+This repository contains a fork of the stol_its_messages package stack allows to use standardized ITS messages for V2X communication.
 
 ## Contribution
 Welcome to the CARMA contributing guide. Please read this guide to learn about our development process, how to propose pull requests and improvements, and how to build and test your changes to this project. [CARMA Contributing Guide](https://github.com/usdot-fhwa-stol/CARMAPlatform/blob/develop/Contributing.md) 
