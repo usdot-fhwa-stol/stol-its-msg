@@ -28,7 +28,7 @@
                 "-t",
                 "carma_j2735",
                 "-o",
-                "etsi_its_coding"
+                "stol_its_coding"
             ],
             "console": "integratedTerminal",
             "justMyCode": true

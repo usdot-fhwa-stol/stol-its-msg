@@ -1,9 +1,9 @@
 cff-version: 1.2.0
 message: "We hope that our tools can help your research. If this is the case, please cite it using the following metadata."
 
-title: etsi_its_messages
+title: stol_its_messages
 type: software
-repository-code: "https://github.com/ika-rwth-aachen/etsi_its_messages"
+repository-code: "https://github.com/ika-rwth-aachen/stol_its_messages"
 date-released: 2023-11-29
 authors:
   - given-names: Guido
@@ -14,7 +14,7 @@ authors:
     family-names: Reiher
 
 preferred-citation:
-  title: "V2AIX: A Multi-Modal Real-World Dataset of ETSI ITS V2X Messages in Public Road Traffic"
+  title: "V2AIX: A Multi-Modal Real-World Dataset of stol ITS V2X Messages in Public Road Traffic"
   type: conference-paper
   conference:
     name: "International Conference on Intelligent Transportation Systems (ITSC)"

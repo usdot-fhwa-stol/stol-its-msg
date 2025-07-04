@@ -20,7 +20,7 @@ def parseCli():
         description="Test script for ASN.1 to JSON conversion using asn1tools.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("-di", "--docker-image", type=str, default="ghcr.io/ika-rwth-aachen/etsi_its_messages:asn1c", help="asn1c Docker image")
+    parser.add_argument("-di", "--docker-image", type=str, default="ghcr.io/ika-rwth-aachen/stol_its_messages:asn1c", help="asn1c Docker image")
 
     args = parser.parse_args()
 
@@ -46,12 +46,12 @@ def main():
 
     file_names= [file.split(".")[0] for file in raw_files if file.endswith('.asn')]
 
-    if not os.path.exists("./etsi_its_testing"):
-        os.makedirs("./etsi_its_testing")
+    if not os.path.exists("./stol_its_testing"):
+        os.makedirs("./stol_its_testing")
     else:
         #  Clean up existing files
-        for file in os.listdir("./etsi_its_testing"):
-            file_path = os.path.join("./etsi_its_testing", file)
+        for file in os.listdir("./stol_its_testing"):
+            file_path = os.path.join("./stol_its_testing", file)
             try:
                 if os.path.isfile(file_path) or os.path.islink(file_path):
                     os.unlink(file_path)
@@ -64,7 +64,7 @@ def main():
     for name in file_names:
         print(f"Processing ASN.1 file: {name}")
         asn1_file_path = f"./asn1/raw/carma_j2735/{name}.asn"
-        code_file_path=f"./etsi_its_conversion/{name}.c"
+        code_file_path=f"./stol_its_conversion/{name}.c"
 
         if not os.path.exists(asn1_file_path):
             print(f"Warning: ASN.1 file {asn1_file_path} does not exist. Skipping conversion.")
@@ -104,7 +104,7 @@ def main():
 
             test_code= templates["TEST"].render(context)
 
-            with open(f"./etsi_its_testing/TEST_{msg_count}_{name}.c", "w") as f:
+            with open(f"./stol_its_testing/TEST_{msg_count}_{name}.c", "w") as f:
                 f.write(code_content+"\n\n"+test_code)
 
             msg_count += 1

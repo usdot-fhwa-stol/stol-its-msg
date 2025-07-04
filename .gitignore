@@ -2,9 +2,9 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 
 asn1/raw/carma_j2735
-etsi_its_coding
-etsi_its_conversion
-etsi_its_testing
+stol_its_coding
+stol_its_conversion
+stol_its_testing
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
