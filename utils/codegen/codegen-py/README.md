@@ -10,10 +10,12 @@
 - Create a python environment
     - `python3 -m venv venv`
     - `. ./venv/bin/activate` for mac os
+    - `pip3 install -r utils/codegen/codegen-py/requirements.txt`
 
-- To generate .c and .h files for a given specification file
-    - `python3 utils/codegen/asn1ToC/asn1ToC.py asn1/raw/carma_j2735/BasicSafetyMessage.asn -t carma_j2735 -o stol_its_coding`
+- To generate .c and .h files for a given specification file (current command is for TestMessage01.asn replace the file path with any desirable file)
+    - `python3 utils/codegen/asn1ToC/asn1ToC.py asn1/raw/carma_j2735/TestMessage01.asn -t carma_j2735 -o stol_its_coding`
 
-- To generate decoding functions for a given specification file
+- To generate decoding functions for list of specification files in asn1/raw/carma_j2735 (this generates the conversion functions in stol_its_conversion )
     - `python3 utils/codegen/codegen-py/codeGeneration.py`
+
 

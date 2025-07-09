@@ -4,7 +4,7 @@ from asn1ToConversionHeader import loadJinjaTemplates
 import json
 import os
 
-primitive_types=["INTEGER","BIT STRING","OCTET STRING","ENUMERATED","BOOLEAN"]
+primitive_types=["INTEGER","BIT STRING","OCTET_STRING","ENUMERATED","BOOLEAN"]
 complex_types=["SEQUENCE","SEQUENCE OF","CHOICE","IA5String"]
 c_keywords=["int","char","float","double","long","short","void","unsigned","signed","const","volatile","static","extern","register","inline"]
 
@@ -152,7 +152,7 @@ def process_primitive(asn1_name,asn1_info,code):
 
         return res
 
-    elif asn1_info["type"] == "OCTET STRING":
+    elif asn1_info["type"] == "OCTET_STRING":
         size_len=len(asn1_info["size"])
         min=None
         max=None
@@ -164,7 +164,7 @@ def process_primitive(asn1_name,asn1_info,code):
             print(f"Error: {asn1_name} is an OCTET STRING but has an invalid size: {size_len}")
 
 
-        rendered=templates["OCTET STRING"].render({
+        rendered=templates["OCTET_STRING"].render({
             "struct_name":tag+asn1_name,
         })
 
@@ -492,6 +492,12 @@ def generate_code(file_path):
     asn1_sets = extractAsn1SetsFromDocs(asn1_docs)
     asn1_classes = extractAsn1ClassesFromDocs(asn1_docs)
 
+    asn1_types["OpenType"]={
+        "type":"INTEGER",
+        "restricted-to":[
+            [0,1]
+        ]
+    }
 
     """
         Parsing ASN1 Classes and Adjusting New Classes

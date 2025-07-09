@@ -71,7 +71,7 @@ def loadJinjaTemplates() -> Dict[str, jinja2.environment.Template]:
     jinja_templates["CHOICE"] = jinja_env.get_template("CHOICE.c.j2")
     jinja_templates["ENUMERATED"] = jinja_env.get_template("ENUMERATED.c.j2")
     jinja_templates["IA5STRING"] = jinja_env.get_template("IA5STRING.c.j2")
-    jinja_templates["OCTECT STRING"] = jinja_env.get_template("OCTET_STRING.c.j2")
+    jinja_templates["OCTECT_STRING"] = jinja_env.get_template("OCTET_STRING.c.j2")
     jinja_templates["SEQUENCE"] = jinja_env.get_template("SEQUENCE.c.j2")
     jinja_templates["SEQUENCE OF"] = jinja_env.get_template("SEQUENCEOF.c.j2")
 
