@@ -530,7 +530,7 @@ def generate_code(file_path):
     code_file="""
 #include <stdio.h>
 #include <stdlib.h>
-#include <cjson/cJSON.h>
+#include "cJSON.h"
 #include "asn_application.h"      // common ASN.1 runtime
 #include "asn_internal.h"         // internal stuff for decoding
 #include "per_decoder.h"          // for uPER decoding
@@ -540,7 +540,7 @@ def generate_code(file_path):
     code_set=set()
     for c in code:
         if c["type"]=="include" and c["name"] not in include_set:
-            code_file+=f"#include \"../stol_its_coding/{tag}{c['include']}\"\n"
+            code_file+=f"#include \"{tag}{c['include']}\"\n"
             include_set.add(c["name"])
 
     for c in code:
