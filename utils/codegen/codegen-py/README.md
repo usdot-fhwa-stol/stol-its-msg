@@ -6,7 +6,7 @@
     - `sudo systemctl start docker` (for ubuntu)
     - use docker desktop for mac os (for mac os and windows)
 - Make sure TestMessage01.asn is present in asn1/raw/carma_j2735
-
+- Make sure cmake
 ###
 
 ### Steps
@@ -22,6 +22,10 @@
 
 - To generate decoding functions for list of specification files in asn1/raw/carma_j2735 (this generates the conversion functions in stol_its_conversion )
     - `python3 utils/codegen/codegen-py/codeGeneration.py`
+
+- To run tests
+    - `chmod +x build.sh` (one time command)
+    - `./build.sh`
 
 
 

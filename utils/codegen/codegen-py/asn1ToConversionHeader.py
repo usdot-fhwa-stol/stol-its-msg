@@ -66,14 +66,24 @@ def loadJinjaTemplates() -> Dict[str, jinja2.environment.Template]:
 
     template_dir = os.path.join(os.path.dirname(__file__), "templates")
     jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir), trim_blocks=False)
-    jinja_templates = {}
-    jinja_templates["BIT STRING"] = jinja_env.get_template("BIT_STRING.c.j2")
-    jinja_templates["CHOICE"] = jinja_env.get_template("CHOICE.c.j2")
-    jinja_templates["ENUMERATED"] = jinja_env.get_template("ENUMERATED.c.j2")
-    jinja_templates["IA5STRING"] = jinja_env.get_template("IA5STRING.c.j2")
-    jinja_templates["OCTECT_STRING"] = jinja_env.get_template("OCTET_STRING.c.j2")
-    jinja_templates["SEQUENCE"] = jinja_env.get_template("SEQUENCE.c.j2")
-    jinja_templates["SEQUENCE OF"] = jinja_env.get_template("SEQUENCEOF.c.j2")
+    jinja_templates={
+        "SEQUENCE_CPP":jinja_env.get_template("SEQUENCE.cpp.j2"),
+        "SEQUENCE_HPP":jinja_env.get_template("SEQUENCE.hpp.j2"),
+        "CHOICE_CPP":jinja_env.get_template("CHOICE.cpp.j2"),
+        # "CHOICE_HPP":jinja_env.get_template("CHOICE.hpp.j2"),
+        "BIT_STRING_CPP":jinja_env.get_template("BIT_STRING.cpp.j2"),
+        # "BIT_STRING_HPP":jinja_env.get_template("BIT_STRING.hpp.j2"),
+        "IA5STRING_CPP":jinja_env.get_template("IA5STRING.cpp.j2"),
+        # "IA5STRING_HPP":jinja_env.get_template("IA5STRING.hpp.j2"),
+        "ENUMERATED_CPP":jinja_env.get_template("ENUMERATED.cpp.j2"),
+        # "ENUMERATED_HPP":jinja_env.get_template("ENUMERATED.hpp.j2"),
+        "OCTET_STRING_CPP":jinja_env.get_template("OCTET_STRING.cpp.j2"),
+        # "OCTET_STRING_HPP":jinja_env.get_template("OCTET_STRING.hpp.j2"),
+        "PRIMITIVES_CPP":jinja_env.get_template("PRIMITIVES.cpp.j2"),
+        # "PRIMITIVES_HPP":jinja_env.get_template("PRIMITIVES.hpp.j2"),
+        "SEQUENCE_OF":jinja_env.get_template("SEQUENCE_OF.cpp.j2"),
+        "HEADER":jinja_env.get_template("HEADER.hpp.j2"),
+    }
 
     return jinja_templates
 

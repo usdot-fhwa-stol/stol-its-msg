@@ -1,0 +1,40 @@
+{
+    "header": {
+      "hostStaticId": "ABC123",
+      "targetStaticId": "XYZ987",
+      "hostBSMId": "1A2B3C4D",
+      "planId": "123e4567-e89b-12d3-a456-426614174000",
+      "timestamp": "1234567891234567891"
+    },
+    "body": {
+      "strategy": "cooperative-lane-change",
+      "planType": "changingLanesToTheLeft",
+      "urgency": 500,
+      "location": {
+        "ecefX": 123456789,
+        "ecefY": -98765432,
+        "ecefZ": 102030405,
+        "timestamp": "1234567891234567891"
+      },
+      "strategyParams": "laneChange=left;speed=45",
+      "trajectoryStart": {
+        "ecefX": 123456780,
+        "ecefY": -98765431,
+        "ecefZ": 102030400,
+        "timestamp": "1234567891234567891"
+      },
+      "trajectory": [
+        {
+          "offsetX": 10,
+          "offsetY": -20,
+          "offsetZ": 5
+        },
+        {
+          "offsetX": 15,
+          "offsetY": -25,
+          "offsetZ": 10
+        }
+      ],
+      "expiration": "1234567891234567891"
+    }
+  }

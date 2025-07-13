@@ -6,6 +6,13 @@ stol_its_coding
 stol_its_conversion
 stol_its_testing
 
+CMakeFiles/
+Makefile
+cmake_install.cmake
+CMakeCache.txt
+CTestTestfile.cmake
+*.cmake
+
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,0 +1,59 @@
+
+
+#include <sstream>
+#include <iomanip>
+#include "json.hpp"
+
+{%- for include in includes %}
+#include "{{ include.name }}"
+{%- endfor %}
+
+using json = nlohmann::json;
+
+/*
+
+{% if comments %}
+{%- for comment in comments %}
+{{ comment }}
+{%- endfor %}
+{%- endif %}
+
+*/
+
+
+json to_JSON_{{ struct_name }}(const {{ struct_name }}_t& obj) {
+    if (!obj.buf || obj.size == 0) {
+        return nullptr;
+    }
+
+    std::ostringstream oss;
+    for (size_t i = 0; i < obj.size; ++i) {
+        oss << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(obj.buf[i]);
+    }
+
+    return nlohmann::json(oss.str());
+}
+
+{{ struct_name }}_t to_STRUCT_{{ struct_name }}(const json& j) {
+    {{ struct_name }}_t obj;
+
+    if (j.is_null()) {
+        obj.buf = nullptr;
+        obj.size = 0;
+        return obj;
+    }
+
+    std::string str = j.get<std::string>();
+    obj.size = str.size() / 2;  // Each byte is represented by 2 hex characters
+    obj.buf = reinterpret_cast<uint8_t*>(malloc(obj.size));
+    if (!obj.buf) {
+        throw std::runtime_error("Memory allocation failed for {{ struct_name }}");
+    }
+
+    for (size_t i = 0; i < obj.size; ++i) {
+        std::string byteStr = str.substr(i * 2, 2);
+        obj.buf[i] = static_cast<uint8_t>(std::stoi(byteStr, nullptr, 16));
+    }
+
+    return obj;
+}

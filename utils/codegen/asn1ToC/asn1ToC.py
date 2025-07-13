@@ -94,6 +94,23 @@ def adjustIncludes(parent_path: str):
         dummy = list(tqdm(pool.imap(adjustIncludesInFile, files_to_process), total=len(files_to_process), desc="Adjusting includes"))
 
 
+def modifyIncludesInFile(args):
+
+    file_path=args
+    with open(file_path, "r") as f:
+        data=f.read()
+        updated_content = re.sub(r'#include\s+<([^>]+)>', r'#include "\1"', data)
+
+    with open(file_path, "w") as f:
+        f.write(updated_content)
+
+def modifyIncludes(parent_path: str):
+    files=os.listdir(parent_path)
+    
+    files_to_process=[(os.path.join(parent_path, f)) for f in files if f.endswith(".h") or f.endswith(".c")]
+    with Pool(max(1, min(ceil(os.cpu_count() * 0.8), os.cpu_count() - 1))) as pool:
+        dummy = list(tqdm(pool.imap(modifyIncludesInFile, files_to_process), total=len(files_to_process), desc="Adjusting includes"))
+
 def adjust_ext(file):
     print(f"Adjusting extensions of input files ...")
     """
@@ -153,8 +170,8 @@ def main():
 
     # create output directories
     output_dir = os.path.realpath(args.output_dir)
-    output_include_dir = os.path.join(args.output_dir)
-    output_source_dir = os.path.join(args.output_dir)
+    output_include_dir = os.path.join(args.output_dir,"include")
+    output_source_dir = os.path.join(args.output_dir,"src")
     os.makedirs(output_include_dir, exist_ok=True)
     os.makedirs(output_source_dir, exist_ok=True)
 
@@ -185,18 +202,20 @@ def main():
 
             # run asn1c docker container to generate header and source files
             with open(asn1c_cmd_file, "w") as f:
-                f.write(f"asn1c $(find /input -name '*.asn' | sort) -fcompound-names -fprefix={args.type}_ -no-gen-BER -no-gen-XER -no-gen-JER -no-gen-OER -no-gen-example -gen-UPER")
-
+                f.write(f"asn1c $(find /input -name '*.asn' | sort) -fcompound-names  -no-gen-BER -no-gen-XER -no-gen-JER -no-gen-OER -no-gen-example -gen-UPER")
+            
             subprocess.run(["docker", "run", "--rm", "-u", f"{os.getuid()}:{os.getgid()}", "-v", f"{container_input_dir}:/input:ro", "-v", f"{container_output_dir}:/output", "-v", f"{asn1c_cmd_file}:/asn1c.sh", args.docker_image], check=True)
             os.remove(asn1c_cmd_file)
-
+            
             # move generated header and source files to output directories
             for f in glob.glob(os.path.join(container_output_dir, "*.h")):
                 shutil.move(f, os.path.join(output_include_dir, os.path.basename(f)))
             for f in glob.glob(os.path.join(container_output_dir, "*.c")):
                 shutil.move(f, os.path.join(output_source_dir, os.path.basename(f)))
 
-    # adjustIncludes(output_dir)
+    # adjustIncludes(output_include_dir)
+    modifyIncludes(output_include_dir)
+    modifyIncludes(output_source_dir)
 
     print(f"Applying patches ...")
     script_dir = os.path.dirname(os.path.abspath(__file__))
