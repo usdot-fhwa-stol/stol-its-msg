@@ -43,7 +43,7 @@ def parseCli():
     """
 
     parser = argparse.ArgumentParser(
-        description="Creates header files from ASN.1 definitions for conversion between C structs and ROS messages.",
+        description="Creates header files from ASN.1 definitions for conversion between C structs and JSON messages.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument("files", type=str, nargs="+", help="ASN.1 files")
