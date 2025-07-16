@@ -44,8 +44,8 @@ foreach(header ${HEADER_FILES})
 endforeach()
 
 # add main.cpp and json.hpp to the codegen files
-configure_file(${CMAKE_SOURCE_DIR}/assets/CommonSafetyRequest.json ${CMAKE_BINARY_DIR}/CommonSafetyRequest.json COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/assets/main1.cpp ${CMAKE_BINARY_DIR}/codegen/main1.cpp COPYONLY)
+configure_file(${CMAKE_SOURCE_DIR}/assets/TestMessage00.json ${CMAKE_BINARY_DIR}/TestMessage00.json COPYONLY)
+configure_file(${CMAKE_SOURCE_DIR}/assets/TestMessage00_main.cpp ${CMAKE_BINARY_DIR}/codegen/TestMessage00_main.cpp COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/assets/json.hpp ${CMAKE_BINARY_DIR}/codegen/json.hpp COPYONLY)
 
 file(GLOB CODEGEN_ALL_FILES "${CMAKE_BINARY_DIR}/codegen/*")

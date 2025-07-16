@@ -94,7 +94,11 @@ def process_sequence_of(body,asn1_name,asn1_types,asn1_raw,asn1_classes):
     max_size=size[1]
     is_optional=body.get('optional', False)
 
+    includes=[]
     if "actual-parameters" in element:
+        includes.append({
+            "name":element_type+".h"
+        })
         element_type=element['actual-parameters'][0]['type']
         log_info(f"Element type for {asn1_name} is {element_type}")
 

@@ -1,14 +1,14 @@
 #include <iostream>
 #include <fstream>
 #include "uper_encoder.h"
-#include "TestMessage01.h"
-#include "TestMessage01_converter.hpp"
+#include "TestMessage00.h"
+#include "TestMessage00_converter.hpp"
 
 using json = nlohmann::json;
 
 int main(){
 
-    std::ifstream inputFile("TestMessage01.json");
+    std::ifstream inputFile("TestMessage00.json");
     if (!inputFile.is_open()) {
         std::cerr << "Failed to open CommonSafetyRequest.json\n";
         return 1;
@@ -19,11 +19,11 @@ int main(){
 
     std::cout << "Read JSON:\n" << j.dump(4) << "\n";
 
-    TestMessage01_t parsed = to_STRUCT_TestMessage01(j);
+    TestMessage00_t parsed = to_STRUCT_TestMessage00(j);
     
     uint8_t encoded_buf[1024];
     asn_enc_rval_t encode_result = uper_encode_to_buffer(
-        &asn_DEF_TestMessage01,
+        &asn_DEF_TestMessage00,
         nullptr, // constraints
         &parsed,
         encoded_buf,
@@ -43,10 +43,10 @@ int main(){
 
     size_t encoded_bytes = (encode_result.encoded + 7) / 8;
     
-    TestMessage01_t *decoded=0;
+    TestMessage00_t *decoded=0;
     asn_dec_rval_t rval = uper_decode(
         0,
-        &asn_DEF_TestMessage01,
+        &asn_DEF_TestMessage00,
         (void **)&decoded,
         encoded_buf,
         encoded_bytes,
@@ -59,7 +59,7 @@ int main(){
     }
 
     // Successfully decoded
-    std::cout << "Decoded successfully:\n" << to_JSON_TestMessage01(*decoded).dump(4) << "\n";
+    std::cout << "Decoded successfully:\n" << to_JSON_TestMessage00(*decoded).dump(4) << "\n";
 
     return 0;  // Placeholder for main function
 }
