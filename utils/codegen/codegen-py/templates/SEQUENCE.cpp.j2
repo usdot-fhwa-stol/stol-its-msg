@@ -1,0 +1,72 @@
+#include "json.hpp"
+{%- for include in includes %}
+#include "{{ include.name }}"
+{%- endfor %}
+
+using json = nlohmann::json;
+
+/*
+
+{% if comments %}
+{%- for comment in comments %}
+{{ comment }}
+{%- endfor %}
+{%- endif %}
+
+*/
+
+json to_JSON_{{struct_name}}(const {{struct_name}}_t& obj) {
+    json j;
+
+   
+    {% for member in members %}
+    {%- if member.item_type == 'simple' %}
+    {%- if member.optional %}
+    if (obj.{{ member.member_name }} != NULL) {
+        j["{{ member.member_name }}"] = *(obj.{{ member.member_name }});
+    }
+    {%- else %}
+    j["{{ member.member_name }}"] = *(obj.{{ member.member_name }});
+    {%- endif %}
+    {%- elif member.item_type == 'complex' %}
+    {%- if member.optional %}
+    if (obj.{{ member.member_name }} != NULL) {
+        json {{ member.member_name }}_json = to_JSON_{{  member.struct_name }}(*obj.{{ member.member_name }});
+        j["{{ member.member_name }}"] = {{ member.member_name }}_json;
+    } 
+    {%- else %}
+    json {{ member.member_name }}_json = to_JSON_{{  member.struct_name }}(obj.{{ member.member_name }});
+    j["{{ member.member_name }}"] = {{ member.member_name }}_json;
+    {%- endif %}
+    {%- endif %}
+    {% endfor %}
+    return j;
+}
+
+{{struct_name}}_t to_STRUCT_{{struct_name}}(const json& j) {
+    {{struct_name}}_t obj;
+    {% for member in members %}
+    {%- if member.item_type == 'simple' %}
+    {%- if member.optional %}
+    if (j.contains("{{ member.member_name }}")) {
+        obj.{{ member.member_name }} = j["{{ member.member_name }}"];
+    } 
+    {%- else %}
+    obj.{{ member.member_name }} = j["{{ member.member_name }}"];
+    {%- endif %}
+    {%- elif member.item_type == 'complex' %}
+    {%- if member.optional %}
+    if (j.contains("{{ member.member_name }}")) {
+        obj.{{ member.member_name }} = new {{ member.struct_name }}_t;
+        *(obj.{{ member.member_name }}) = to_STRUCT_{{  member.struct_name }}(j["{{ member.member_name }}"]);
+    } else{
+        obj.{{ member.member_name }} = nullptr;  // or handle as needed
+    }
+    {%- else %}
+    obj.{{ member.member_name }} = to_STRUCT_{{  member.struct_name }}(j["{{ member.member_name }}"]);
+    {%- endif %}
+    {%- endif %}
+    {% endfor %}
+
+    return obj;
+}

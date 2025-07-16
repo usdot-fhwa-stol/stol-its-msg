@@ -1,0 +1,49 @@
+#include "json.hpp"
+
+{%- for include in includes %}
+#include "{{ include.name }}"
+{%- endfor %}
+
+using json = nlohmann::json;
+
+/*
+
+{% if comments %}
+{%- for comment in comments %}
+{{ comment }}
+{%- endfor %}
+{%- endif %}
+
+*/
+
+json to_JSON_{{ struct_name }}(const {{ struct_name }}_t& obj) {
+    if (!obj.buf || obj.size == 0) {
+        return nullptr;
+    }
+
+    std::string str(reinterpret_cast<const char*>(obj.buf), obj.size);
+    return nlohmann::json(str);
+}
+
+{{ struct_name }}_t to_STRUCT_{{ struct_name }}(const json& j) {
+    {{ struct_name }}_t obj;
+
+    if (j.is_null()) {
+        obj.buf = nullptr;
+        obj.size = 0;
+        return obj;
+    }
+
+    std::string str = j.get<std::string>();
+    obj.size = str.size();
+    obj.buf = reinterpret_cast<uint8_t*>(malloc(obj.size));
+    if (!obj.buf) {
+        throw std::runtime_error("Memory allocation failed for {{ struct_name }}");
+    }
+    memcpy(obj.buf, str.data(), obj.size);
+
+    return obj;
+}
+
+
+

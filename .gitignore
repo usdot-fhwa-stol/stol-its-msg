@@ -1,6 +1,17 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 
+stol_its_coding
+stol_its_conversion
+stol_its_testing
+
+CMakeFiles/
+Makefile
+cmake_install.cmake
+CMakeCache.txt
+CTestTestfile.cmake
+*.cmake
+
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -178,3 +189,6 @@ pyrightconfig.json
 # ignore ros2 bagfiles
 metadata.yaml
 *.db3
+
+
+

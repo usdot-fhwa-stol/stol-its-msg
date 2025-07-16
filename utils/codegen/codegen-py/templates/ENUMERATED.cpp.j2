@@ -1,0 +1,48 @@
+#include "json.hpp"
+
+{%- for include in includes %}
+#include "{{ include.name }}"
+{%- endfor %}
+
+using json = nlohmann::json;
+
+/*
+
+
+{% if comments %}
+{%- for comment in comments %}
+{{ comment }}
+{%- endfor %}
+{%- endif %}
+
+*/
+
+constexpr const char* {{ struct_name }}_to_string({{ struct_name }}_t obj) {
+    switch (obj) {
+        {%- for member in members %}
+        case {{ struct_name }}_{{ member.name }}: return "{{ member.name }}";
+        {%- endfor %}
+        default: return "unknown";
+    }
+}
+
+nlohmann::json to_JSON_{{ struct_name }}(const {{ struct_name }}_t& obj) {
+    return nlohmann::json({{ struct_name }}_to_string(obj));
+}
+
+{{ struct_name }}_t to_STRUCT_{{ struct_name }}(const nlohmann::json& j) {
+    if (j.is_null() || !j.is_string()) {
+        throw std::invalid_argument("Invalid JSON for {{ struct_name }}");
+    }
+    
+    std::string str = j.get<std::string>();
+    
+    {%- for member in members %}
+    if (str == "{{ member.name }}") {
+        return {{ struct_name }}_{{ member.name }};
+    }
+    {%- endfor %}
+    
+    throw std::invalid_argument("Unknown value for {{ struct_name }}: " + str);
+}
+

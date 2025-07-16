@@ -1,0 +1,80 @@
+#include "json.hpp"
+
+
+{%- for include in includes %}
+#include "{{ include.name }}"
+{%- endfor %}
+
+using json = nlohmann::json;
+
+/*
+
+{% if comments %}
+{%- for comment in comments %}
+{{ comment }}
+{%- endfor %}
+{%- endif %}
+}
+*/
+
+const char* {{ struct_name }}_names[] = {
+    {%- for member in members %}
+    "{{ member.name }}",
+    {%- endfor %}
+};
+
+json to_JSON_{{ struct_name }}(const {{ struct_name }}_t& obj) {
+    if (!obj.buf || obj.size == 0) {
+        return nullptr;
+    }
+
+    int bit_index = -1;
+    size_t total_bits = obj.size * 8 - obj.bits_unused;
+
+    for (size_t i = 0; i < total_bits; ++i) {
+        size_t byte_index = i / 8;
+        size_t bit_pos = 7 - (i % 8);  // Big-endian
+        if (obj.buf[byte_index] & (1 << bit_pos)) {
+            bit_index = static_cast<int>(i);
+            break;
+        }
+    }
+
+    if (bit_index >= 0 && bit_index < {{ members | length }}) {
+        return {{ struct_name }}_names[bit_index];
+    }
+
+    return nullptr;
+}
+
+
+{{ struct_name }}_t to_STRUCT_{{ struct_name }}(const json& j) {
+    {{ struct_name }}_t obj;
+
+    // Initialize all bits to 0
+    obj.buf = nullptr;
+    obj.size = 0;
+    obj.bits_unused = 0;
+
+    if (j.is_null() || !j.is_string()) {
+        return obj;  // Return empty object if JSON is null or not a string
+    }
+
+    std::string value = j.get<std::string>();
+    for (size_t i = 0; i < {{ members | length }}; ++i) {
+        if (value == {{ struct_name }}_names[i]) {
+            // Set the corresponding bit
+            size_t byte_index = i / 8;
+            size_t bit_pos = 7 - (i % 8);  // Big-endian
+            if (obj.size <= byte_index) {
+                obj.buf = (uint8_t*)calloc(byte_index + 1, sizeof(uint8_t));
+                obj.size = byte_index + 1;
+            }
+            obj.buf[byte_index] |= (1 << bit_pos);
+            return obj;
+        }
+    }
+
+    return obj;  // Return empty object if no match found
+}
+

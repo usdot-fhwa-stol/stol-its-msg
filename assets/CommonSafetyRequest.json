@@ -1,0 +1,5 @@
+{
+  "timeStamp": 123456,
+  "msgCnt": 42,
+  "requests": ["itemA", "itemC", "itemI", "itemN"]
+}

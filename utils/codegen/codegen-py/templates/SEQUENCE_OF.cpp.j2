@@ -1,0 +1,61 @@
+#include "json.hpp"
+{%- for include in includes %}
+#include "{{ include.name }}"
+{%- endfor %}
+
+using json = nlohmann::json;
+
+/*
+
+{% if comments %}
+{%- for comment in comments %}
+{{ comment }}
+{%- endfor %}
+{%- endif %}
+
+*/
+
+
+json to_JSON_{{struct_name}}(const {{struct_name}}_t& obj) {
+    json j=json::array();
+
+    for(int i=0;i<obj.list.count;++i){
+        const {{element_name}}_t* item = obj.list.array[i];
+        j.push_back(to_JSON_{{element_name}}(*item));
+    }
+
+    return j;
+}
+
+{{struct_name}}_t to_STRUCT_{{struct_name}}(const json& j) {
+    {{struct_name}}_t obj;
+    obj.list.count = j.size();
+    obj.list.array = new {{element_name}}_t*[obj.list.count];
+
+    for(int i=0;i<obj.list.count;++i){
+        obj.list.array[i] = new {{element_name}}_t(to_STRUCT_{{element_name}}(j[i]));
+    }
+
+    return obj;
+}
+
+/*
+
+RestrictionClassList_t to_STRUCT_RestrictionClassList(const json& j) {
+    RestrictionClassList_t obj;
+    memset(&obj, 0, sizeof(obj));
+
+    for (const auto& item : j) {
+        RestrictionClassAssignment_t* assignment = (RestrictionClassAssignment_t*)calloc(1, sizeof(RestrictionClassAssignment_t));
+        *assignment = to_STRUCT_RestrictionClassAssignment(item);
+
+        ASN_SEQUENCE_ADD(&obj, assignment);  // macro from asn1c to add item to list
+    }
+
+    return obj;
+}
+
+*/
+
+
+
