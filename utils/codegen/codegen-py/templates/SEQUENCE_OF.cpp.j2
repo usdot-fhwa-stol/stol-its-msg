@@ -38,24 +38,3 @@ json to_JSON_{{struct_name}}(const {{struct_name}}_t& obj) {
 
     return obj;
 }
-
-/*
-
-RestrictionClassList_t to_STRUCT_RestrictionClassList(const json& j) {
-    RestrictionClassList_t obj;
-    memset(&obj, 0, sizeof(obj));
-
-    for (const auto& item : j) {
-        RestrictionClassAssignment_t* assignment = (RestrictionClassAssignment_t*)calloc(1, sizeof(RestrictionClassAssignment_t));
-        *assignment = to_STRUCT_RestrictionClassAssignment(item);
-
-        ASN_SEQUENCE_ADD(&obj, assignment);  // macro from asn1c to add item to list
-    }
-
-    return obj;
-}
-
-*/
-
-
-

@@ -1,6 +1,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 
+asn1tools.changes.md
+
+.DS_Store
 stol_its_coding
 stol_its_conversion
 stol_its_testing

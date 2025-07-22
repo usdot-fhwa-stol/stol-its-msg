@@ -1,9 +1,0 @@
-#pragma once
-
-#include "json.hpp"
-#include "{{include_name}}.h"
-
-
-nlohmann::json to_JSON_{{struct_name}}(const {{struct_name}}_t& obj);
-{{struct_name}}_t to_STRUCT_{{struct_name}}(const nlohmann::json& j);
-

@@ -33,7 +33,7 @@ import subprocess
 import tempfile
 from math import ceil
 from multiprocessing import Pool
-
+import sys
 from tqdm import tqdm
 
 
@@ -48,7 +48,7 @@ def parseCli():
         description="Creates header and source files from ASN1 definitions using asn1c.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("files", type=str, nargs="+", help="ASN1 files")
+    parser.add_argument("files", type=str, nargs="+", help="ASN1 files directory")
     parser.add_argument("-o", "--output-dir", type=str, required=True, help="output package directory")
     parser.add_argument("-td", "--temp-dir", type=str, default=None, help="temporary directory for mounting files to container; uses tempfile by default")
     parser.add_argument("-t", "--type", type=str, required=True, help="ASN1 type")
@@ -168,62 +168,72 @@ def main():
 
     args = parseCli()
 
-    # create output directories
-    output_dir = os.path.realpath(args.output_dir)
-    output_include_dir = os.path.join(args.output_dir,"include")
-    output_source_dir = os.path.join(args.output_dir,"src")
-    os.makedirs(output_include_dir, exist_ok=True)
-    os.makedirs(output_source_dir, exist_ok=True)
-
-    # create temporary directories for running asn1c in docker container
-    with tempfile.TemporaryDirectory() as temp_input_dir:
-        with tempfile.TemporaryDirectory() as temp_output_dir:
-
-            if args.temp_dir is None:
-                container_input_dir = temp_input_dir
-                container_output_dir = temp_output_dir
-                asn1c_cmd_file = tempfile.NamedTemporaryFile(delete=False).name
-            else:
-                container_input_dir = os.path.join(args.temp_dir, "input")
-                container_output_dir = os.path.join(args.temp_dir, "output")
-                os.makedirs(container_input_dir, exist_ok=True)
-                os.makedirs(container_output_dir, exist_ok=True)
-                asn1c_cmd_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "asn1c.sh")
-
-            print(args.files)
-
-            # adjust extensions of input files
-            # for f in args.files:
-            #     adjust_ext(f)
-
-            # copy input asn1 files to temporary directory
-            for f in args.files:
-                shutil.copy(f, container_input_dir)
-
-            # run asn1c docker container to generate header and source files
-            with open(asn1c_cmd_file, "w") as f:
-                f.write(f"asn1c $(find /input -name '*.asn' | sort) -fcompound-names  -no-gen-BER -no-gen-XER -no-gen-JER -no-gen-OER -no-gen-example -gen-UPER")
+    for dir_path in args.files:
+        if not os.path.isdir(dir_path):
+            raise ValueError(f"Provided path '{dir_path}' is not a directory.")
+        asn1_files = glob.glob(os.path.join(dir_path, "*.asn1"))
+        if not asn1_files:
+            raise ValueError(f"No ASN1 files found in the directory '{dir_path}'.")
+        
+        for asn1_file in asn1_files:
+            if not asn1_file.endswith(".asn1"):
+                raise ValueError(f"File '{asn1_file}' is not an ASN1 file. Please provide valid ASN1 files.")
             
-            subprocess.run(["docker", "run", "--rm", "-u", f"{os.getuid()}:{os.getgid()}", "-v", f"{container_input_dir}:/input:ro", "-v", f"{container_output_dir}:/output", "-v", f"{asn1c_cmd_file}:/asn1c.sh", args.docker_image], check=True)
-            os.remove(asn1c_cmd_file)
-            
-            # move generated header and source files to output directories
-            for f in glob.glob(os.path.join(container_output_dir, "*.h")):
-                shutil.move(f, os.path.join(output_include_dir, os.path.basename(f)))
-            for f in glob.glob(os.path.join(container_output_dir, "*.c")):
-                shutil.move(f, os.path.join(output_source_dir, os.path.basename(f)))
+            spec_file= os.path.basename(asn1_file)
+            spec_name=spec_file.split(".")[0]
 
-    # adjustIncludes(output_include_dir)
-    modifyIncludes(output_include_dir)
-    modifyIncludes(output_source_dir)
+    
+            # create output directories
+            output_dir = os.path.realpath(args.output_dir)
+            output_include_dir = os.path.join(args.output_dir,spec_name,"include")
+            output_source_dir = os.path.join(args.output_dir,spec_name,"src")
+            os.makedirs(output_include_dir, exist_ok=True)
+            os.makedirs(output_source_dir, exist_ok=True)
 
-    print(f"Applying patches ...")
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    patch_file = os.path.join(script_dir, f"patches/{args.type}.patch")
-    if os.path.exists(patch_file):
-        subprocess.run(["git", "apply", patch_file], check=True)
+            # create temporary directories for running asn1c in docker container
+            with tempfile.TemporaryDirectory() as temp_input_dir:
+                with tempfile.TemporaryDirectory() as temp_output_dir:
 
-    print(f"Generated C/C++ library for {args.type}")
+                    if args.temp_dir is None:
+                        container_input_dir = temp_input_dir
+                        container_output_dir = temp_output_dir
+                        asn1c_cmd_file = tempfile.NamedTemporaryFile(delete=False).name
+                    else:
+                        container_input_dir = os.path.join(args.temp_dir, "input")
+                        container_output_dir = os.path.join(args.temp_dir, "output")
+                        os.makedirs(container_input_dir, exist_ok=True)
+                        os.makedirs(container_output_dir, exist_ok=True)
+                        asn1c_cmd_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "asn1c.sh")
+
+
+                    # copy input asn1 files to temporary directory
+                    
+                    shutil.copy(asn1_file, container_input_dir)
+
+                    # run asn1c docker container to generate header and source files
+                    with open(asn1c_cmd_file, "w") as f:
+                        f.write(f"asn1c $(find /input -name '*.asn1' | sort) -fcompound-names  -no-gen-BER -no-gen-XER -no-gen-JER -no-gen-OER -no-gen-example -gen-UPER")
+                    
+                    subprocess.run(["docker", "run", "--rm", "-u", f"{os.getuid()}:{os.getgid()}", "-v", f"{container_input_dir}:/input:ro", "-v", f"{container_output_dir}:/output", "-v", f"{asn1c_cmd_file}:/asn1c.sh", args.docker_image], check=True)
+                    os.remove(asn1c_cmd_file)
+                    
+                    # move generated header and source files to output directories
+                    for f in glob.glob(os.path.join(container_output_dir, "*.h")):
+                        shutil.move(f, os.path.join(output_include_dir, os.path.basename(f)))
+                    for f in glob.glob(os.path.join(container_output_dir, "*.c")):
+                        shutil.move(f, os.path.join(output_source_dir, os.path.basename(f)))
+
+            # adjustIncludes(output_include_dir)
+            modifyIncludes(output_include_dir)
+            modifyIncludes(output_source_dir)
+
+            print(f"Applying patches ...")
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            patch_file = os.path.join(script_dir, f"patches/{args.type}.patch")
+            if os.path.exists(patch_file):
+                subprocess.run(["git", "apply", patch_file], check=True)
+
+            print(f"Generated C/C++ library for {args.type}")
 
 if __name__ == "__main__":
 

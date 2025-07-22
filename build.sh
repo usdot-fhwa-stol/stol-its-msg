@@ -4,4 +4,4 @@ mkdir -p build
 rm -rf build/*
 
 cd build
-cmake .. && make && ./decode
+cmake .. && make 

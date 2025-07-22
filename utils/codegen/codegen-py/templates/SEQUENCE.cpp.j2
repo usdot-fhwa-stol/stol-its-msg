@@ -38,6 +38,17 @@ json to_JSON_{{struct_name}}(const {{struct_name}}_t& obj) {
     json {{ member.member_name }}_json = to_JSON_{{  member.struct_name }}(obj.{{ member.member_name }});
     j["{{ member.member_name }}"] = {{ member.member_name }}_json;
     {%- endif %}
+    {%- elif member.item_type=="custom" %}
+    {%- if member.optional %}
+    if (obj.{{ member.member_name }} != NULL) {
+        {% if member.custom_code.json %}
+        {{ member.custom_code.json }}
+        {%- endif %}
+    {% else %}
+    {% if member.custom_code.json %}
+    {{ member.custom_code.json | indent(4)  }}
+    {%- endif %}
+    {%- endif %}
     {%- endif %}
     {% endfor %}
     return j;
@@ -64,6 +75,18 @@ json to_JSON_{{struct_name}}(const {{struct_name}}_t& obj) {
     }
     {%- else %}
     obj.{{ member.member_name }} = to_STRUCT_{{  member.struct_name }}(j["{{ member.member_name }}"]);
+    {%- endif %}
+    {%- elif member.item_type=="custom" %}
+    {%- if member.optional %}
+    if (j.contains("{{ member.member_name }}")) {
+        {% if member.custom_code.struct %}
+        {{ member.custom_code.struct }}
+        {%- endif %}
+    } else{
+        obj.{{ member.member_name }} = nullptr;  // or handle as needed
+    }
+    {%- else %}
+    {{ member.custom_code.struct | indent(4)  }}
     {%- endif %}
     {%- endif %}
     {% endfor %}
