@@ -136,7 +136,7 @@ json to_JSON_{{function_name}}(const {{struct_name}}& obj) {
     {%- endif %}
     {%- elif member.item_type == 'complex' %}
     {%- if member.is_optional %}
-    if (j.contains("{{ member.name }}")) {
+    if (j.contains("{{ member.name[0] |lower + member.name[1:]  }}")) {
         obj.{{ member.name }} = new {{ member.struct_name }};
         *(obj.{{ member.name }}) = to_STRUCT_{{  member.function_name }}(j["{{ member.name[0] | lower + member.name[1:] }}"]);
     } else{

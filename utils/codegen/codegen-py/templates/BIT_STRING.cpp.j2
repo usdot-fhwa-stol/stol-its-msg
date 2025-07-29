@@ -20,6 +20,7 @@ using json = nlohmann::json;
 
 
 json to_JSON_{{ function_name }}(const {{ struct_name }}& obj) {
+    json j=json::array();
     if (!obj.buf || obj.size == 0) {
         return nullptr;
     }
@@ -30,6 +31,22 @@ json to_JSON_{{ function_name }}(const {{ struct_name }}& obj) {
         {%- endfor %}
     };
 
+
+    size_t total_bits = obj.size * 8 - obj.bits_unused;
+    for (size_t i = 0; i < total_bits; ++i) {
+        size_t byte_index = i / 8;
+        size_t bit_pos = 7 - (i % 8);  // Big-endian
+        if (obj.buf[byte_index] & (1 << bit_pos)) {
+            if(i<sizeof({{ function_name }}_names)/sizeof({{ function_name }}_names[0])) {
+                j.push_back({{ function_name }}_names[i]);
+            } else {
+                throw std::runtime_error("Index out of bounds in to_JSON_{{ function_name }}");
+            }
+        }
+    }
+
+
+    /*
     int bit_index = -1;
     size_t total_bits = obj.size * 8 - obj.bits_unused;
 
@@ -45,8 +62,9 @@ json to_JSON_{{ function_name }}(const {{ struct_name }}& obj) {
     if (bit_index >= 0 && bit_index < {{ members | length }}) {
         return {{ function_name }}_names[bit_index];
     }
+    */
 
-    return nullptr;
+    return j;
 }
 
 
