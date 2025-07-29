@@ -1,4 +1,4 @@
-# docker build -t ghcr.io/ika-rwth-aachen/stol_its_messages:asn1c -f asn1c.Dockerfile .
+
 
 FROM ubuntu:22.04
 

@@ -24,7 +24,7 @@
             "request": "launch",
             "program": "utils/codegen/asn1ToC/asn1ToC.py",
             "args": [
-                "asn1/raw/carma_j2735/BasicSafetyMessage.asn",
+                "asn1/raw/carma_j2735/",
                 "-t",
                 "carma_j2735",
                 "-o",

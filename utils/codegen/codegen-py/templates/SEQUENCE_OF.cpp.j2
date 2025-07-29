@@ -15,25 +15,113 @@ using json = nlohmann::json;
 
 */
 
+{% if sequence_function_present %}
+json to_JSON_{{seq.function_name}}(const {{seq.struct_name}}& obj) {
+    json j;
 
-json to_JSON_{{struct_name}}(const {{struct_name}}_t& obj) {
+    {% for member in seq.members %}
+    {% if member.item_type == "choice"%}
+    {% if member.is_optional %}
+    if (obj.{{ member.name }} != NULL) {
+        json j_{{member.name}};
+
+        switch (obj.{{member.name}}.present){
+            case {{member.struct_name}}_PR_NOTHING:{
+                j_{{member.name}} = nullptr;
+                break;
+            }
+            {% for choice in member.choices %}
+            case {{member.struct_name}}_PR_{{choice.name}}:{
+                j_{{member.name}} = to_JSON_{{choice.function_name}}(obj.{{member.name}}.choice.{{choice.name}});
+                break;
+            }
+            {% endfor %}
+            default:
+                throw std::runtime_error("Unknown choice type");
+        }
+        j["{{member.name}}"] = j_{{member.name}};
+    }
+    {% else %}
+    json j_{{member.name}};
+
+    switch (obj.{{member.name}}.present){
+        case {{member.struct_name}}_PR_NOTHING:{
+            j_{{member.name}} = nullptr;
+            break;
+        }
+        {% for choice in member.choices %}
+        case {{member.struct_name}}_PR_{{choice.name}}:{
+            j_{{member.name}} = to_JSON_{{choice.function_name}}(obj.{{member.name}}.choice.{{choice.name}});
+            break;
+        }
+        {% endfor %}
+        default:
+            throw std::runtime_error("Unknown choice type");
+    }
+    j["{{member.name}}"] = j_{{member.name}};
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+
+    return j;
+}
+
+{{seq.struct_name}} to_STRUCT_{{seq.function_name}}(const json& j) {
+    {{seq.struct_name}} obj;
+
+    {% for member in seq.members %}
+    {% if member.item_type == "choice"%}
+    {% if member.is_optional %}
+    if (j.contains("{{member.name}}")) {
+        {% for choice in member.choices %}
+        if(j["{{member.name}}"].contains("{{choice.name}}")) {
+            obj.{{member.name}}.present = {{member.struct_name}}_PR_{{choice.name}};
+            obj.{{member.name}}.choice.{{choice.name}} = to_STRUCT_{{choice.function_name}}(j["{{member.name}}"]["{{choice.name}}"]);
+        }
+        {% endfor %}
+    } else {
+        obj.{{member.name}}.present = {{member.struct_name}}_PR_NOTHING;
+    }
+    {% else %}
+    {% for choice in member.choices %}
+    if(j.contains("{{member.name}}") && j["{{member.name}}"].contains("{{choice.name}}")) {
+        obj.{{member.name}}.present = {{member.struct_name}}_PR_{{choice.name}};
+        obj.{{member.name}}.choice.{{choice.name}} = to_STRUCT_{{choice.function_name}}(j["{{member.name}}"]["{{choice.name}}"]);
+    }
+    {% endfor %}
+    if (!j.contains("{{member.name}}") || j["{{member.name}}"].is_null()) {
+        obj.{{member.name}}.present = {{member.struct_name}}_PR_NOTHING;
+    }
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+
+    return obj;
+}
+
+{% endif %}
+
+
+
+
+json to_JSON_{{function_name}}(const {{struct_name}}& obj) {
     json j=json::array();
 
     for(int i=0;i<obj.list.count;++i){
-        const {{element_name}}_t* item = obj.list.array[i];
-        j.push_back(to_JSON_{{element_name}}(*item));
+        const {{element_struct_name}}* item = obj.list.array[i];
+        j.push_back(to_JSON_{{element_function_name}}(*item));
     }
 
     return j;
 }
 
-{{struct_name}}_t to_STRUCT_{{struct_name}}(const json& j) {
-    {{struct_name}}_t obj;
+{{struct_name}} to_STRUCT_{{function_name}}(const json& j) {
+    {{struct_name}} obj;
     obj.list.count = j.size();
-    obj.list.array = new {{element_name}}_t*[obj.list.count];
+    obj.list.array = new {{element_struct_name}}*[obj.list.count];
 
     for(int i=0;i<obj.list.count;++i){
-        obj.list.array[i] = new {{element_name}}_t(to_STRUCT_{{element_name}}(j[i]));
+        obj.list.array[i] = new {{element_struct_name}}(to_STRUCT_{{element_function_name}}(j[i]));
     }
 
     return obj;

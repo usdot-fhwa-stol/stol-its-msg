@@ -13,7 +13,6 @@ foreach(spec_file ${SPEC_FILES})
     string(REPLACE ".asn1" "" fname ${fname})
     message(STATUS "Processing ASN.1 specification file: ${fname}")
 
-    # just use the filename without extension for the directory
 
     set(SRC_DIR "${CMAKE_SOURCE_DIR}/stol_its_coding/${fname}/src")
     set(INC_DIR "${CMAKE_SOURCE_DIR}/stol_its_coding/${fname}/include")
@@ -52,8 +51,8 @@ foreach(spec_file ${SPEC_FILES})
     endforeach()
 
     # add main.cpp and json.hpp to the codegen files
-    configure_file(${CMAKE_SOURCE_DIR}/assets/TestMessage00.json ${CMAKE_BINARY_DIR}/TestMessage00.json COPYONLY)
-    configure_file(${CMAKE_SOURCE_DIR}/assets/TestMessage00_main.cpp ${CMAKE_BINARY_DIR}/codegen/${fname}/TestMessage00_main.cpp COPYONLY)
+    # configure_file(${CMAKE_SOURCE_DIR}/assets/${fname}.json ${CMAKE_BINARY_DIR}/${fname}.json COPYONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/assets/test_1_${fname}.cpp ${CMAKE_BINARY_DIR}/codegen/${fname}/test_1_${fname}.cpp COPYONLY)
     configure_file(${CMAKE_SOURCE_DIR}/assets/json.hpp ${CMAKE_BINARY_DIR}/codegen/${fname}/json.hpp COPYONLY)
 
     file(GLOB CODEGEN_ALL_FILES "${CMAKE_BINARY_DIR}/codegen/${fname}/*")

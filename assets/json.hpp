@@ -18,6 +18,7 @@
 #ifndef INCLUDE_NLOHMANN_JSON_HPP_
 #define INCLUDE_NLOHMANN_JSON_HPP_
 
+#include <iostream>
 #include <algorithm> // all_of, find, for_each
 #include <cstddef> // nullptr_t, ptrdiff_t, size_t
 #include <functional> // hash, less
@@ -22181,14 +22182,19 @@ class basic_json // NOLINT(cppcoreguidelines-special-member-functions,hicpp-spec
     /// @sa https://json.nlohmann.me/api/basic_json/operator%5B%5D/
     const_reference operator[](const typename object_t::key_type& key) const
     {
-        // const operator[] only works for objects
+        std::cerr << "[DEBUG] operator[] called with key: " << key << std::endl;
+
         if (JSON_HEDLEY_LIKELY(is_object()))
         {
             auto it = m_data.m_value.object->find(key);
+            if (it == m_data.m_value.object->end()) {
+                std::cerr << "[DEBUG] key '" << key << "' not found in object" << std::endl;
+            }
             JSON_ASSERT(it != m_data.m_value.object->end());
             return it->second;
         }
 
+        std::cerr << "[DEBUG] JSON is not an object, but " << type_name() << std::endl;
         JSON_THROW(type_error::create(305, detail::concat("cannot use operator[] with a string argument with ", type_name()), this));
     }
 

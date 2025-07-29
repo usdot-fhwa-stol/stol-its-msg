@@ -69,9 +69,7 @@ def loadJinjaTemplates() -> Dict[str, jinja2.environment.Template]:
     jinja_templates={
         "SEQUENCE":jinja_env.get_template("SEQUENCE.cpp.j2"),
         "SEQUENCE_OF":jinja_env.get_template("SEQUENCE_OF.cpp.j2"),
-        "convertSequenceOf":jinja_env.get_template("convertSequenceOf.j2"),
         "CHOICE":jinja_env.get_template("CHOICE.cpp.j2"),
-        "convertChoice":jinja_env.get_template("convertChoice.j2"),
         "BIT_STRING":jinja_env.get_template("BIT_STRING.cpp.j2"),
         "IA5STRING":jinja_env.get_template("IA5STRING.cpp.j2"),
         "ENUMERATED":jinja_env.get_template("ENUMERATED.cpp.j2"),

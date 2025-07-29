@@ -1,890 +1,767 @@
+import os
 from asn1CodeGenerationUtils import *
 from asn1ToConversionHeader import loadJinjaTemplates
-import os
+import json
 import logging
-import sys
-import shutil
-import argparse
 
-
-primitive_types=["INTEGER","BOOLEAN"]
-asn1_definition_types=["SEQUENCE","SEQUENCE OF","CHOICE","IA5String","BIT STRING","OCTET STRING","ENUMERATED"]
-c_keywords=["int","char","float","double","long","short","void","unsigned","signed","const","volatile","static","extern","register","inline"]
-
-log_file = os.path.join(os.getcwd(), "codegen.log")
 logging.basicConfig(
-    filename=log_file,  # Log file path (in current directory)
-    level=logging.DEBUG,  # Change to DEBUG if needed
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    filemode="w",  # Overwrite the log file on each run
+    level=logging.DEBUG,  # Can be DEBUG, INFO, WARNING, ERROR, CRITICAL
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),                    # Console
+        logging.FileHandler("codegen2.log","w")   # File
+    ]
 )
 
-def log_info(*args):
-    logging.info(' '.join(map(str, args)))
 
-def log_warning(message):
-    logging.warning(message)
+class CodeGen:
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.info("Initializing CodeGen")
 
-def log_error(message):
-    logging.error(message)
+        self.docs=None
+        self.types=None
+        self.values=None
+        self.sets=None
+        self.classes=None
+        self.raw=None
 
-def log_exception(e):
-    logging.exception(e)
+        self.out_dir=None
+        self.input_file_path=None
+        self.templates=loadJinjaTemplates()
+        self.name=None
 
-templates= loadJinjaTemplates()
-tag="carma_j2735_"
+        self.c_keywords = { "int", "float", "long","double", "char", "void", "if", "else", "while", "for", "return", "break", "continue", "switch", "case", "default", "struct", "union", "typedef", "static", "extern", "const", "volatile","class" }
+        self.asn1_types=['SEQUENCE', 'SEQUENCE OF','CHOICE', 'ENUMERATED', 'OCTET STRING', 'BIT STRING', 'UTF8String', 'IA5String']
+        self.asn1_primitives=['INTEGER', 'BOOLEAN']
 
-name=""
-
-def process_comments(asn1_name,asn1_raw):
-    comments=None
-    if asn1_name in asn1_raw:
-        comments=asn1_raw[asn1_name]
-    else:
-        return []
+    def validate_name(self, name):
+        return name.replace(" ","_").replace("-","_")
     
-    additional_comments=[
-        "This file contains automatically generated C++ decoding functions using Jinja templates.",
-        "Do not modify manually unless you know what you're doing.",
-        "Below is the schema used to generate the functions:",
-        "\n"
-    ]
+    def process_bit_string(self, name, body):
+        named_bits=body.get('named-bits', [])
 
-    c_s=[]
-    if comments:
-        c_s=comments.split("\n")
-        c_s=[c for c in c_s]
-    c_s=[*additional_comments, *c_s]
-    comments="\n".join(c_s)
+        members=[]
+        for bit in named_bits:
+            if not bit:
+                continue
 
-    return c_s
+            member_name=bit[0]
+            member_value=bit[1]
 
-def process_primitive(body,asn1_name,out_dir):
-    if body['type'] == "INTEGER":
-        if "restricted-to" in body:
-            min_val=body["restricted-to"][0][0]
-            max_val=body["restricted-to"][0][1]
-            log_info(f"INTEGER: min: {min_val} max: {max_val}")
-        else:
-            log_warning(f"Error: is an INTEGER but has no restricted-to")
+            members.append({
+                "name": self.validate_name(member_name),
+                "value": member_value
+            })
 
         return {
-            "include_name": asn1_name,
-            "struct_name": validate_name(asn1_name),
+            "members": members,
+            "struct_name": f"{self.validate_name(name)}_t",
+            "function_name": self.validate_name(name),
+            "includes": [{
+                "name": f"{self.validate_name(name)}_converter.hpp"
+            }]
         }
 
-    elif body["type"] == "BOOLEAN":
-        res={
-            "include_name": asn1_name,
-            "struct_name": validate_name(asn1_name),
-        }
+    def process_enumerated(self, name, body):
+        values=body['values']
+        members=[]
 
-        return res
-    else:
-        log_error(f"Error: Unsupported primitive type {body['type']}")
-        return None
+        for value in values:
+            if not value:
+                continue
 
-def process_sequence_of(body,asn1_name,asn1_types,asn1_raw,asn1_classes,out_dir):
-    element=body['element']
-    element_type=element['type']
+            member_name=value[0]
+            member_value=value[1]
 
-    name=body['name'] if 'name' in body else None
-    size=body['size'][0]
-    min_size=size[0]
-    max_size=size[1]
-    is_optional=body.get('optional', False)
+            members.append({
+                "name": self.validate_name(member_name),
+                "value": member_value
+            })
 
-    includes=[]
-    if "actual-parameters" in element:
-        includes.append({
-            "name":element_type+".h"
-        })
-        
-        element_type=element['actual-parameters'][0]['type']
-        log_info(f"Element type for {asn1_name} is {element_type}")
-
-        return {
-            "element_name": validate_name(element_type),
-            "struct_name": validate_name(asn1_name),
-            "includes": includes
-        }
-
-    if element_type in asn1_definition_types:
-        if element_type == "SEQUENCE":
-            log_info(f"Processing SEQUENCE OF {name} with element type {element_type}")
-            new_type=asn1_name+"__Member"
-            res=process_sequence(element,new_type,asn1_types,asn1_raw,asn1_classes,out_dir)
-            log_info(f"Rendering SEQUENCE OF for {asn1_name} with result: {res}")
-            render_sequence(res,new_type,asn1_types,asn1_raw)
-        else:
-            sys.exit(f"Error: Unsupported SEQUENCE OF type {element_type} in {asn1_name}")
-
-        return {
-            "element_name": validate_name(element_type),
-            "struct_name": validate_name(asn1_name),
-            "includes": includes
-        }
-    elif asn1_types[element_type]:
         includes=[{
-            "name": validate_name(element_type)+"_converter.hpp",
+            "name": f"{name}.h"
         }]
-        includes.append({
-            "name": asn1_name+".h",
-        })
-        includes.append({
-            "name":element_type+".h",
-        })
+
         return {
-            "element_name": validate_name(element_type),
-            "struct_name": validate_name(asn1_name),
+            "members": members,
+            "struct_name": f"{self.validate_name(name)}_t",
+            "function_name": self.validate_name(name),
             "includes": includes
         }
-        
-    else:
-        sys.exit(f"Error: Unknown type in {asn1_name}")
-        
-
-
-def render_sequence_of(res,asn1_name,asn1_types,asn1_raw):
-    c_s=process_comments(asn1_name,asn1_raw)
-    log_info(f"Rendering SEQUENCE OF for {asn1_name} with comments: {c_s}")
-
-    r_out={}
-
-    rendered=templates["SEQUENCE_OF"].render(
-        struct_name=validate_name(asn1_name),
-        element_name=res['element_name'],
-        includes=res['includes'],
-        comments=c_s
-    )
-
-    r_out['src']={
-        "file_name": f"{validate_name(asn1_name)}_converter.cpp",
-        "content": rendered
-    }
-
-    rendered=templates["HEADER"].render(
-        struct_name=validate_name(asn1_name),
-        include_name=asn1_name,
-        includes=res['includes']
-    )
-
-    r_out['header']={
-        "file_name": f"{validate_name(asn1_name)}_converter.hpp",
-        "content": rendered
-    }
-
-    return r_out
-
-def process_ia5string(body,asn1_name,asn1_types,asn1_raw,out_dir):
     
-    is_optional=body.get('optional', False)
-    log_info(f"Processing IA5String {asn1_name}")
-
-    c_data={
-        "struct_name":asn1_name,
-        
-        "optional":is_optional
-    }
-    includes=[{
-        "name": asn1_name+".h",
-    }]
-
-    includes.append({
-        "name":validate_name(asn1_name)+"_converter.hpp",
-    })
-
-    return {
-        "code":c_data,
-        "includes":includes,
-    }
-
-def render_ia5string(res,asn1_name,asn1_types,asn1_raw):
-    c_s=process_comments(asn1_name,asn1_raw)
-    log_info(f"Rendering IA5String for {asn1_name} with comments: {c_s}")
-
-
-    r_out={}
-
-    rendered=templates["IA5STRING"].render(
-        struct_name=validate_name(asn1_name),
-        optional=res['code']['optional'],
-        includes=res['includes'],
-        comments=c_s
-    )
-
-    r_out['src']={
-        "file_name": f"{validate_name(asn1_name)}_converter.cpp",
-        "content": rendered
-    }
-
-    rendered=templates["HEADER"].render(
-        include_name=asn1_name,
-        struct_name=validate_name(asn1_name),
-        includes=res['includes']
-    )
-
-    r_out['header']={
-        "file_name": f"{validate_name(asn1_name)}_converter.hpp",
-        "content": rendered
-    }
-
-    return r_out
-
-def process_bit_string(body,asn1_name,asn1_types,asn1_raw,out_dir):
-    size=body['size'][0] if "size" in body else 0
-    named_bits=body['named-bits'] if 'named-bits' in body else []
-
-    members=[]
-    for named_bit in named_bits:
-        if not named_bit:
-            continue
-        member_name=named_bit[0]
-        member_value=named_bit[1]
-        members.append({
-            "name": validate_name(member_name),
-            "value": member_value
-        })
-
-    context={
-        "struct_name": validate_name(asn1_name),
-        "members": members,
-        "optional": body.get('optional', False)
-    }
-    includes=[{
-        "name": asn1_name+".h",
-    }]
-
-    includes.append({
-        "name":validate_name(asn1_name)+"_converter.hpp",
-    })
-
-    return {
-        "code": context,
-        "includes": includes,
-    }
-
-
-def render_bit_string(res,asn1_name,asn1_types,asn1_raw):
-    c_s=process_comments(asn1_name,asn1_raw)
-        
-    comments="\n".join(c_s)
-    log_info(f"Rendering bit string for {asn1_name} with comments: {comments}")
-    rendered=templates["BIT_STRING"].render(
-        struct_name=validate_name(asn1_name),
-        members=res['code']['members'],
-        includes=res['includes'],
-        comments=c_s
-    )
-
-    r_out={
-        "src":{
-            "file_name": f"{validate_name(asn1_name)}_converter.cpp",
-            "content": rendered
+    def process_strings(self, name, body):
+        return {
+            "struct_name": f"{self.validate_name(name)}_t",
+            "function_name": self.validate_name(name),
+            "includes": [{
+                "name": f"{self.validate_name(name)}_converter.hpp"
+            }],
+            "is_optional": body.get('optional', False)
         }
-    }
-
-    rendered=templates["HEADER"].render(
-        include_name=asn1_name,
-        struct_name=validate_name(asn1_name),
-        members=res['code']['members'],
-        includes=res['includes']
-    )
-
-    r_out['header']={
-        "file_name": f"{validate_name(asn1_name)}_converter.hpp",
-        "content": rendered
-    }
-
-    return r_out
 
 
-def process_enumerated(body,asn1_name,asn1_types,asn1_raw,out_dir):
-    values=body['values']
-    members=[]
-    for value in values:
-        if not value:
-            continue
-        member_name=value[0]
-        member_value=value[1]
-        members.append({
-            "name": validate_name(member_name),
-            "value": member_value
-        })
+    def process_sequence(self,name,body):
+        members=body['members']
 
-    context={
-        "struct_name": validate_name(asn1_name),
-        "members": members,
-        "optional": body.get('optional', False)
-    }
-    includes=[{
-        "name": asn1_name+".h",
-    }]
+        if "parameters" in body:
+            parameters=body['parameters']
+            if parameters[0]=="Set":
+                return
 
-    includes.append({
-        "name":validate_name(asn1_name)+"_converter.hpp",
-    })
+        member_data=[]
+        includes=[]
+        for member in members:
 
-
-    return {
-        "code": context,
-        "includes": includes,
-    }
-
-def render_enumerated(res,asn1_name,asn1_types,asn1_raw):
-    c_s=process_comments(asn1_name,asn1_raw)
-    log_info(f"Rendering enumerated for {asn1_name} with comments: {c_s}")
-
-    r_out={}
-
-    rendered=templates["ENUMERATED"].render(
-        struct_name=validate_name(asn1_name),
-        members=res['code']['members'],
-        includes=res['includes'],
-        comments=c_s
-    )
-    r_out['src']={
-        "file_name": f"{validate_name(asn1_name)}_converter.cpp",
-        "content": rendered
-    }
-
-    rendered=templates["HEADER"].render(
-        include_name=asn1_name,
-        struct_name=validate_name(asn1_name),
-        members=res['code']['members'],
-        includes=res['includes']
-    )
-
-    r_out['header']={
-        "file_name": f"{validate_name(asn1_name)}_converter.hpp",
-        "content": rendered
-    }
-
-    return r_out
-
-
-def process_octet_string(body,asn1_name,asn1_types,asn1_raw,out_dir):
-    context={
-        "struct_name": validate_name(asn1_name),
-        "optional": body.get('optional', False)
-    }
-
-    includes=[{
-        "name": asn1_name+".h",
-    }]
-
-    includes.append({
-        "name":validate_name(asn1_name)+"_converter.hpp",
-    })
-
-    return {
-        "code": context,
-        "includes": includes,
-    }
-
-
-def render_octet_string(res,asn1_name,asn1_types,asn1_raw):
-    c_s=process_comments(asn1_name,asn1_raw)
-    log_info(f"Rendering octet string for {asn1_name} with comments: {c_s}")
-
-    r_out={}
-
-    rendered=templates["OCTET_STRING"].render(
-        struct_name=validate_name(asn1_name),
-        includes=res['includes'],
-        comments=c_s
-    )
-    r_out['src']={
-        "file_name": f"{validate_name(asn1_name)}_converter.cpp",
-        "content": rendered
-    }
- 
-    rendered=templates["HEADER"].render(
-        include_name=asn1_name,
-        struct_name=validate_name(asn1_name),
-        includes=res['includes']
-    )
-
-    r_out['header']={
-        "file_name": f"{validate_name(asn1_name)}_converter.hpp",
-        "content": rendered
-    }
-  
-    return r_out
-
-def process_choice(body,asn1_name,asn1_types,asn1_raw,asn1_classes,out_dir):
-    members=body['members']
-
-    c_data=[]
-    choices=[]
-    includes=[]
-
-    for member in members:
-        if not member:
-            continue
-        
-        member_type=member['type']
-        member_name=member['name']
-
-        if member_type in asn1_types:
-
-            choices.append({
-                "type":"simple",
-                "name": validate_name(member_name),
-                "struct_name": validate_name(member_type),
-            })
-
-            includes.append({
-                "name": validate_name(member_type)+"_converter.hpp",
-                "type": member_type
-            })
-        elif member_type in asn1_definition_types:
-            custom_code=None
-            if member_type=="SEQUENCE OF":
-                res=process_sequence_of(member,member_name,asn1_types,asn1_raw, asn1_classes,out_dir)
-                log_info(f"Rendering SEQUENCE OF in CHOICE for {member_name} with result: {res}")
-                rendered=templates["convertSequenceOf"].render(
-                    name=member_name,
-                    choice_name="choice."+member_name,
-                    element_name=res['element_name']
-                )
-
-                splits=rendered.split("### code break ###")
-                rendered_json=splits[0]
-                rendered_struct=splits[1]
-
-                choices.append({
-                    "type":"custom",
-                    "custom_code":{
-                        "json": rendered_json,
-                        "struct": rendered_struct
-                    },
-                    "name": validate_name(member_name),
-                    "struct_name": validate_name(member_name),
-                })
-
-                includes.append(*res['includes'])
+            if not member:
+                continue
             
+            member_type=member['type']
+            member_name=member['name']
+            member_is_optional=member.get('optional', False)
 
-    c_data.append({
-        "struct_name":asn1_name,
-        "choices":choices,
-    })
-
-    
-    includes.append({
-        "name": asn1_name+".h"
-    })
-    includes.append({
-        "name":validate_name(asn1_name)+"_converter.hpp",
-    })
-
-
-    return {
-        "code":c_data,
-        "includes":includes,
-    }
-
-
-def render_choice(res,asn1_name,asn1_types,asn1_raw):
-    c_s=process_comments(asn1_name,asn1_raw)
-    log_info(f"Rendering choice for {asn1_name} with comments: {c_s}")
-    # log_info(f"Choices: {res['code'][0]['choices']}")
-
-    r_out={}
-
-    rendered=templates["CHOICE"].render(
-        struct_name=validate_name(asn1_name),
-        choices=res['code'][0]["choices"],
-        includes=res['includes'],
-        comments=c_s
-    )
-
-    r_out['src']={
-        "file_name": f"{validate_name(asn1_name)}_converter.cpp",
-        "content": rendered
-    }
-
-    rendered=templates["HEADER"].render(
-        include_name=asn1_name,
-        struct_name=validate_name(asn1_name),
-        choices=res['code'][0]["choices"],
-        includes=res['includes']
-    )
-
-    r_out['header']={
-        "file_name": f"{validate_name(asn1_name)}_converter.hpp",
-        "content": rendered
-    }
-
-    return r_out
-
-def process_sequence(body,asn1_name,asn1_types,asn1_raw,asn1_classes,out_dir):
-    members=body['members']
-
-    if "parameters" in body:
-        parameters=body['parameters']
-        if parameters[0]=="Set":
-            return 
-
-    c_data=[]
-    includes=[]
-    for member in members:
-        if not member:
-            continue
-        member_type=member['type']
-        member_name=member['name']
-
-        if member_name in c_keywords:
-            member_name=member_name.capitalize()
-        member_is_optional=member.get('optional', False)
-
-        if member_type in asn1_definition_types:
-            struct_name=validate_name(asn1_name)+"__"+member_name
-            if member_type=="CHOICE":
-                asn1_types[struct_name]=member
-                res=process_choice(member,asn1_name,asn1_types, asn1_raw, asn1_classes,out_dir)
-                log_info(f"Rendering CHOICE in SEQUENCE for {asn1_name} with result: {res}")
-
-                choices=res['code'][0]["choices"]
-
-
-                rendered_choice=templates["convertChoice"].render(
-                    name=validate_name(member_name),
-                    choices=choices,
-                    struct_name=validate_name(struct_name),
-                )
-
-                splits=rendered_choice.split("### code break ###")
-                rendered_json_choice=splits[0]
-                rendered_struct_choice=splits[1]
-
-                log_info(f"Rendered choice for {member_name}: {rendered_choice}")
-                log_info(res['includes'])
-                c_data.append({
-                    "member_name": member_name,
-                    "member_type": member_type,
-                    "struct_name": struct_name,
-                    "item_type": "custom",
-                    "optional": member_is_optional,
-                    "custom_code": {
-                        "json": rendered_json_choice,
-                        "struct":rendered_struct_choice
-                    }
-                })
-                
-                for inc in res['includes']:
-                    if inc['name'] not in includes:
-                        includes.append(inc)
-                
-                
-            elif member_type=="SEQUENCE OF":
-                element_type=member['element']['type']
-                
-                rendered_sequence_of=templates["convertSequenceOf"].render(
-                    name=validate_name(member_name),
-                    element_name=validate_name(element_type)
-                )
-
-                splits=rendered_sequence_of.split("### code break ###")
-                rendered_json_sequence_of=splits[0]
-                rendered_struct_sequence_of=splits[1]
-                log_info(f"Rendered sequence of for {member_name}: {rendered_sequence_of}")
-                c_data.append({
-                    "member_name": member_name,
-                    "member_type": member_type,
-                    "struct_name": validate_name(struct_name),
-                    "item_type": "custom",
-                    "optional": member_is_optional,
-                    "custom_code": {
-                        "json": rendered_json_sequence_of,
-                        "struct":rendered_struct_sequence_of
-                    }
+            if "actual-parameters" in member:
+                actual_type=member['actual-parameters'][0]['type']
+                member_data.append({
+                    "item_type": "complex",
+                    "struct_name": f"{self.validate_name(actual_type)}_t",
+                    "function_name": self.validate_name(actual_type),
+                    "name": self.validate_name(member_name),
+                    "is_optional": member_is_optional
                 })
 
                 includes.append({
-                    "name": validate_name(element_type)+"_converter.hpp",
+                    "name": f"{self.validate_name(actual_type)}_converter.hpp"
                 })
-                includes.append({
-                    "name": validate_name(element_type)+".h",
+                continue
+
+            if member_name in self.c_keywords:
+                member_name=member_name.capitalize()
+
+            if member_type in self.asn1_types:
+                if member_type=="CHOICE":
+                    choice_response=self.process_choice(name,member)
+                    member_type=f"{name}__{member_name}"
+                    self.logger.debug(f"sequence process_choice response: {json.dumps(choice_response, indent=4)}")
+                    member_data.append({
+                        "item_type": "choice",
+                        "name": member_name,
+                        "struct_name": f"{self.validate_name(member_type)}",
+                        "function_name": self.validate_name(member_type),
+                        "is_optional": member_is_optional,
+                        "choices": choice_response["members"],
+                    })
+
+                    includes.extend(choice_response["includes"])
+
+                elif member_type=="SEQUENCE OF":
+                    seq_of_response=self.process_sequence_of(name,member)
+                    member_type=f"{name}__{member_name}"
+                    self.logger.debug(f"sequence process_sequence_of response: {json.dumps(seq_of_response, indent=4)}")
+                    member_data.append({
+                        "item_type": "sequence_of",
+                        **seq_of_response,
+                        "name": member_name,
+                        "struct_name": f"{self.validate_name(member_type)}",
+                        "function_name": self.validate_name(member_type),
+                        "is_optional": member_is_optional,
+                    })
+
+                    includes.extend(seq_of_response["includes"])
+
+            elif member_type in self.asn1_primitives:
+                member_data.append({
+                    "is_optional": member_is_optional,
+                    "item_type": "simple",
+                    "data_type": "bool" if member_type=="BOOLEAN" else "long",
+                    "function_name": self.validate_name(member_type),
+                    "struct_name": f"{self.validate_name(member_type)}_t",
+                    "name": member_name
                 })
 
+                includes.append({
+                    "name": f"{member_type}.h"
+                })
 
             else:
-                pass
-        elif member_type in asn1_classes:
-            member_type=asn1_classes[member_type]
-            c_data.append({
-                "member_name": member_name,
-                "member_type": member_type,
-                "struct_name": validate_name(member_type),
-                "item_type": "complex",
-                "optional": member_is_optional
-            })
-        else:
-            c_data.append({
-                "member_name": member_name,
-                "member_type": member_type,
-                "struct_name": validate_name(member_type),
-                "item_type": "complex",
-                "optional": member_is_optional
+                member_data.append({
+                    "function_name": self.validate_name(member_type),
+                    "struct_name": f"{self.validate_name(member_type)}_t",
+                    "is_optional": member_is_optional,
+                    "item_type": "complex",
+                    "name": self.validate_name(member_name)
+                })
+
+                includes.append({
+                    "name": f"{self.validate_name(member_type)}_converter.hpp"
+                })
+
+        includes_set=set(include["name"] for include in includes)
+        includes=[{"name":name} for name in includes_set]
+
+        return {
+            "members": member_data,
+            "includes": includes
+        }
+    
+    def process_sequence_of(self,name,body):
+        element=body['element']
+        element_type=element['type']
+
+        includes=[]
+
+        is_sequence_function_present=False
+
+        response_seq_of={
+            "struct_name": f"{self.validate_name(name)}_t",
+            "function_name": self.validate_name(name),
+            "sequence_function_present": is_sequence_function_present,
+        }
+
+        actual_type=None
+        if "actual-parameters" in element:
+            actual_parameters=element['actual-parameters']
+            actual_type=actual_parameters[0]['type']
+
+            includes.append({
+                "name": f"{element_type}.h"
             })
 
             includes.append({
-                "name": validate_name(member_type)+"_converter.hpp",
+                "name": f"{self.validate_name(actual_type)}_converter.hpp"
             })
-    includes.append({
-        "name": asn1_name+".h"
-    })
 
-    includes.append({
-        "name": validate_name(asn1_name)+"_converter.hpp",
-    })
+            return{
+                "actual_type": actual_type,
+                "element_struct_name": f"{self.validate_name(actual_type)}_t",
+                "element_function_name": self.validate_name(actual_type),
+                "includes": includes
+            }
+        
+        if element_type in self.asn1_types:
+            if element_type=="SEQUENCE":
+                seq_name=f"{self.validate_name(name)}__Member"
+                is_sequence_function_present=True
+                response=self.process_sequence(seq_name, element)
+                logging.debug(f"process_sequence response for name {name}: {json.dumps(response, indent=4)}")
+                response_seq_of['seq']={
+                    "function_name": self.validate_name(seq_name),
+                    "struct_name": f"{self.validate_name(seq_name)}",
+                    "members": response['members'],
+                }
+                response_seq_of['element_struct_name']=f"{self.validate_name(seq_name)}"
+                response_seq_of['element_function_name']=self.validate_name(seq_name)
+                response_seq_of['sequence_function_present']=is_sequence_function_present
 
-    includes_set=set()
-    for inc in includes:
-        if inc['name'] not in includes_set:
-            includes_set.add(inc['name'])
-    includes=[{"name": inc} for inc in includes_set]
-    return {
-        "code":c_data,
-        "includes":includes,
-    }
+                includes.extend(response['includes'])
+            elif element_type=="CHOICE":
+                pass
+        else:
+            response_seq_of['element_struct_name']=f"{self.validate_name(element_type)}_t"
+            response_seq_of['element_function_name']=self.validate_name(element_type)
 
-def render_sequence(res,asn1_name,asn1_types,asn1_raw):
-    c_s=process_comments(asn1_name,asn1_raw)
-    
-    r_out={}
+            includes.append({
+                "name": f"{self.validate_name(element_type)}_converter.hpp"
+            })
 
-    rendered=templates["SEQUENCE"].render(
-        struct_name=validate_name(asn1_name),
-        members=res['code'],
-        includes=res['includes'],
-        comments=c_s
-    )
+            includes.append({
+                "name": f"{self.validate_name(element_type)}.h"
+            })
 
-    r_out['src']={
-        "file_name": f"{validate_name(asn1_name)}_converter.cpp",
-        "content": rendered
-    }
 
-    rendered=templates["HEADER"].render(
-        include_name=asn1_name,
-        struct_name=validate_name(asn1_name),
-        members=res['code'],
-        includes=res['includes']
-    )
-
-    r_out['header']={
-        "file_name": f"{validate_name(asn1_name)}_converter.hpp",
-        "content": rendered
-    }
-
-    return r_out
-
-def render_primitive(asn1_name,asn1_types,asn1_raw):
-
-    c_s=process_comments(asn1_name,asn1_raw)
-    rendered=templates["PRIMITIVES"].render(
-        include_name=asn1_name,
-        struct_name=validate_name(asn1_name),
-        includes=[{
-            "name": validate_name(asn1_name)+"_converter.hpp"
-        }],
-        comments=c_s
-    )
-    r_out={
-        "src":{
-            "file_name": f"{validate_name(asn1_name)}_converter.cpp",
-            "content": rendered
+        return {
+            **response_seq_of,
+            "includes": includes,
         }
-    }
-
-    rendered=templates["HEADER"].render(
-        include_name=asn1_name,
-        struct_name=validate_name(asn1_name),
-    )
-    r_out['header']={
-        "file_name": f"{validate_name(asn1_name)}_converter.hpp",
-        "content": rendered
-    }
-
-    return r_out
-   
-
-def process_asn1_definitions(asn1_name,asn1_types,asn1_raw,asn1_classes,out_dir):
-    body=asn1_types[asn1_name]
-    d_type=body['type']
-    log_info(f"Processing ASN.1 definition: {asn1_name} of type {d_type}")
-
-    out=None
-    if d_type=="SEQUENCE":
-        res=process_sequence(body,asn1_name,asn1_types,asn1_raw,asn1_classes,out_dir)
-        if not res:
-            return
-        out=render_sequence(res,asn1_name,asn1_types,asn1_raw)
-
-    elif d_type=="SEQUENCE OF":
-        res=process_sequence_of(body,asn1_name,asn1_types,asn1_raw, asn1_classes,out_dir)
-        out=render_sequence_of(res,asn1_name,asn1_types,asn1_raw)
-
-    elif d_type=="CHOICE":
-        res=process_choice(body,asn1_name,asn1_types,asn1_raw,asn1_classes,out_dir)
-        out=render_choice(res,asn1_name,asn1_types,asn1_raw)
-
-    elif d_type=="IA5String":
-        res=process_ia5string(body,asn1_name,asn1_types,asn1_raw,out_dir)
-        out=render_ia5string(res,asn1_name,asn1_types,asn1_raw)
-
-    elif d_type=="BIT STRING":
-        res=process_bit_string(body,asn1_name,asn1_types,asn1_raw,out_dir)
-        out=render_bit_string(res,asn1_name,asn1_types,asn1_raw)
-
-    elif d_type=="ENUMERATED":
-        res=process_enumerated(body,asn1_name,asn1_types,asn1_raw,out_dir)
-        out=render_enumerated(res,asn1_name,asn1_types,asn1_raw)
-
-    elif d_type=="OCTET STRING":
-        res=process_octet_string(body,asn1_name,asn1_types,asn1_raw,out_dir)
-        out=render_octet_string(res,asn1_name,asn1_types,asn1_raw)
-
-    elif d_type in primitive_types:
-        # print(f"Processing primitive type {d_type} for {asn1_name}")
-        out=render_primitive(asn1_name,asn1_types,asn1_raw)
-
-    if out:
-        src_file_name=out['src']['file_name']
-        header_file_name=out['header']['file_name']
-
-        src_file_path=os.path.join(out_dir,src_file_name)
-        header_file_path=os.path.join(out_dir,header_file_name)
-
-        with open(src_file_path, "w") as f:
-            f.write(out['src']['content'])
-            log_info(f"Generated C code for {asn1_name} in {src_file_path}")
-
-        with open(header_file_path, "w") as f:
-            f.write(out['header']['content'])
-            log_info(f"Generated C++ header for {asn1_name} in {header_file_path}")
-
-def process_asn1_sets(asn1_name,asn1_types,asn1_raw,asn1_classes,asn1_sets,out_dir):
-    body=asn1_sets[asn1_name]
-    d_type=body['type']
+                
     
-    out=None
-    if d_type=="SEQUENCE":
-        res=process_sequence(body,asn1_name,asn1_types,asn1_raw,asn1_classes,out_dir)
-        if not res:
-            return
-        out=render_sequence(res,asn1_name,asn1_types,asn1_raw)
-    
+    def process_choice(self,name,body):
+        members=body['members']
 
-    if out:
-        src_file_name=out['src']['file_name']
-        header_file_name=out['header']['file_name']
+        choices=[]
+        includes=[]
 
-        src_file_path=os.path.join(out_dir,src_file_name)
-        header_file_path=os.path.join(out_dir,header_file_name)
-
-        with open(src_file_path, "w") as f:
-            f.write(out['src']['content'])
-            log_info(f"Generated C code for {asn1_name} in {src_file_path}")
-
-        with open(header_file_path, "w") as f:
-            f.write(out['header']['content'])
-            log_info(f"Generated C++ header for {asn1_name} in {header_file_path}")
-
-
-
-def generate_code(file_path,out_dir):
-    files=[file_path]
-    asn1_docs, asn1_raw = parseAsn1Files(files)
-    asn1_types = extractAsn1TypesFromDocs(asn1_docs)
-    asn1_values = extractAsn1ValuesFromDocs(asn1_docs)
-    asn1_sets = extractAsn1SetsFromDocs(asn1_docs)
-    asn1_classes = extractAsn1ClassesFromDocs(asn1_docs)
-
-
-    """
-        Parsing ASN1 Classes and Adjusting New Classes
-    """
-    new_classes={}
-    for asn1_class in asn1_classes:
-        info=asn1_classes[asn1_class]
-        for member in info["members"]:
+        for member in members:
             if not member:
-                log_error(f"Error: {asn1_class} has a None member")
                 continue
 
-            member_type=member["type"]
-            member_name=member["name"]
-            log_info(f"Member: {member_name} Type: {member_type}")
+            member_type=member['type']
+            member_name=member['name']
 
+            if "actual-parameters" in member:
+                actual_type=member['actual-parameters'][0]['type']
+                
+                choices.append({
+                    "name": self.validate_name(member_name),
+                    "item_type":"complex",
+                    "struct_name": f"{self.validate_name(actual_type)}_t",
+                    "function_name": self.validate_name(actual_type),
+                })
 
-            if not member_type or not member_name:
-                log_error(f"Error: {asn1_class} has a None member type or name")
+                includes.append({
+                    "name": f"{self.validate_name(actual_type)}_converter.hpp"
+                })
+
                 continue
 
-            new_classes[f"{asn1_class}.{member_name}"]=member_type
+            if member_name in self.c_keywords:
+                member_name=member_name.capitalize()
 
-    asn1_classes=new_classes
+            if member_type in self.asn1_types:
+                if member_type=="SEQUENCE OF":
+                    seq_of_response=self.process_sequence_of(name,member)
+                    self.logger.debug(f"process_choice sequence_of response: {json.dumps(seq_of_response, indent=4)}")
+                    choices.append({
+                        "name": self.validate_name(member_name),
+                        "item_type": "sequence_of",
+                        **seq_of_response,
+                        "struct_name": f"{self.validate_name(member_type)}",
+                        "function_name": self.validate_name(member_type),
+                    })
 
+                    includes.extend(seq_of_response["includes"])
+                
+            else:
+                choices.append({
+                    "function_name": self.validate_name(member_type),
+                    "struct_name": f"{self.validate_name(member_type)}_t",
+                    "name": self.validate_name(member_name),
+                    "item_type": "complex",
+                })
+
+                includes.append({
+                    "name": f"{self.validate_name(member_type)}_converter.hpp"
+                })
+
+        includes_set=set(include["name"] for include in includes)
+        includes=[{"name":name} for name in includes_set]
+        return {
+            "members": choices,
+            "includes": includes
+        }
+
+    def process_class(self,key,body):
+        members=body['members']
+        class_members=body['class_members']
+
+        for class_member in class_members:
+            new_type={
+                "type":"SEQUENCE",
+                "members":[
+                    {
+                        "type":members[0]['type'],
+                        "name":self.validate_name(members[0]['name']),
+                    },
+                    {
+                        **class_members[class_member],
+                        "name":self.validate_name(members[1]['name'])
+                    }
+                ]
+            }
+            self.logger.debug(f"Processing class member {class_member}")
+            response=self.process_sequence(class_member,new_type)
+            response['includes'].append({
+                "name": f"{key}.h"
+            })
+            self.render_sequence(class_member,response,key)
+            self.logger.debug(f"class type {key} process_sequence response: {json.dumps(response, indent=4)}")
+
+    def process_comments(self,name):
+        comments=None
+        if name in self.raw:
+            comments=self.raw[name]
+        else:
+            return []
+        
+        additional_comments=[
+            "This file contains automatically generated C++ encoding and decoding functions using ASN.1 definitions and Jinja2 templates.",
+            "Do not edit this file manually. If you need to make changes, modify the ASN"
+            "Below is the schema used to generate the functions:\n\n"
+        ]
+
+        c_s=[]
+        if comments:
+            c_s=comments.split("\n")
+            c_s=[c for c in c_s]
+        c_s=[*additional_comments, *c_s]
+        comments="\n".join(c_s)
+
+        return c_s
+
+    def process_types(self):
+
+        for key,value in list(self.types.items()):
+            d_type=value['type']
+
+            logging.debug(f"Processing type {key} with type {d_type}")
+
+            if d_type=="SEQUENCE":
+                response=self.process_sequence(key,value)
+                response['includes'].append({
+                    "name": f"{self.validate_name(key)}_converter.hpp"
+                })
+                self.render_sequence(key,response)
+                
+            elif d_type=="SEQUENCE OF":
+                response=self.process_sequence_of(key,value)
+                self.render_sequence_of(key,response)
+            elif d_type=="ENUMERATED":
+                response=self.process_enumerated(key,value)
+                response['includes'].append({
+                    "name": f"{self.validate_name(key)}_converter.hpp"
+                })
+                self.render_enumerated(key,response)
+            elif d_type=="OCTET STRING" or d_type=="IA5String":
+                response=self.process_strings(key,value)
+                logging.debug(f"process_strings response for {key}: {json.dumps(response, indent=4)}")
+                response['includes'].append({
+                    "name": f"{self.validate_name(key)}_converter.hpp"
+                })
+                if d_type=="OCTET STRING":
+                    self.render_octet_string(key,response)
+                elif d_type=="IA5String":
+                    self.render_ia5string(key,response)
     
+            elif d_type=="CHOICE":
+                response=self.process_choice(key,value)
+                logging.debug(f"process_choice response for {key}: {json.dumps(response, indent=4)}")
+                response['includes'].append({
+                    "name": f"{self.validate_name(key)}_converter.hpp"
+                })
+                self.render_choice(key,response)
 
-    for key,value in list(asn1_types.items()):
-        process_asn1_definitions(key,asn1_types, asn1_raw, asn1_classes,out_dir)
+            elif d_type=="BIT STRING":
+                response=self.process_bit_string(key,value)
+                response['includes'].append({
+                    "name": f"{self.validate_name(key)}_converter.hpp"
+                })
+                self.render_bit_string(key,response)
+                
+                
+            elif d_type=="CLASS":
+                self.process_class(key,value)
+            elif d_type in self.asn1_primitives:
+                self.render_primitive(key,value)
+            else:
+                self.render_primitive(key, value)
 
 
-    for key in asn1_sets:
-        print(f"Processing ASN.1 set: {key}")
-        asn1_sets[key]['type']="SEQUENCE"
-        print(asn1_sets[key])
+    def render_bit_string(self,name,data):
+        comments=self.process_comments(name)
+        data['includes'].append({
+            "name": f"{name}.h"
+        })
 
-    for key, value in list(asn1_sets.items()):
-        process_asn1_sets(key,asn1_types, asn1_raw, asn1_classes,asn1_sets,out_dir)
+        rendered_template=self.templates["BIT_STRING"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            members=data['members'],
+            includes=data['includes'],
+            comments=comments
+        )
+
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.cpp"), "w") as f:
+            f.write(rendered_template)
+
+        rendered_template=self.templates["HEADER"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            include_name=f"{name}.h"
+        )
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
+            f.write(rendered_template)
+
+    def render_octet_string(self,name,data):
+        comments=self.process_comments(name)
+        data['includes'].append({
+            "name": f"{name}.h"
+        })
+
+        rendered_template=self.templates["OCTET_STRING"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            includes=data['includes'],
+            comments=comments,
+            is_optional=data.get('is_optional', False)
+        )
+
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.cpp"), "w") as f:
+            f.write(rendered_template)
+
+        rendered_template=self.templates["HEADER"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            include_name=f"{name}.h"
+        )
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
+            f.write(rendered_template)
+
+    def render_ia5string(self,name,data):
+        comments=self.process_comments(name)
+        data['includes'].append({
+            "name": f"{name}.h"
+        })
+
+        rendered_template=self.templates["IA5STRING"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            includes=data['includes'],
+            comments=comments,
+            is_optional=data.get('is_optional', False)
+        )
+
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.cpp"), "w") as f:
+            f.write(rendered_template)
+
+        rendered_template=self.templates["HEADER"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            include_name=f"{name}.h"
+        )
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
+            f.write(rendered_template)
+
+    def render_choice(self,name,data):
+        comments=self.process_comments(name)
+        
+        data['includes'].append({
+            "name": f"{name}.h"
+        })
+
+        rendered_template=self.templates["CHOICE"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            choices=data['members'],
+            includes=data['includes'],
+            comments=comments
+        )
+
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.cpp"), "w") as f:
+            f.write(rendered_template)
+
+        rendered_template=self.templates["HEADER"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            include_name=f"{name}.h"
+        )
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
+            f.write(rendered_template)
+
+    def render_enumerated(self,name,data):
+        comments=self.process_comments(name)
         
 
+        rendered_template=self.templates["ENUMERATED"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            members=data['members'],
+            includes=data.get('includes', []),
+            comments=comments
+        )
 
-def parseCli():
-    parser=argparse.ArgumentParser(
-        description="ASN.1 to C code generator",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.cpp"), "w") as f:
+            f.write(rendered_template)
 
-    parser.add_argument("-t", "--type", type=str, required=True, help="ASN1 type")
+        rendered_template=self.templates["HEADER"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            include_name=f"{name}.h"
+        )
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
+            f.write(rendered_template)
 
-    args=parser.parse_args()
+    def render_primitive(self,name,data):
+        comments=self.process_comments(name)
+        includes=[]
+        includes.append({
+            "name": f"{name}.h"
+        })
 
-    return args
+        rendered_template=self.templates["PRIMITIVES"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            includes=includes,
+            comments=comments
+        )
+
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.cpp"), "w") as f:
+            f.write(rendered_template)
+
+        rendered_template=self.templates["HEADER"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            include_name=f"{name}.h"
+        )
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
+            f.write(rendered_template)
 
 
-def main():
 
-    # args=parseCli()
 
-    #  make sure the stol_its_conversion directory exists
-    output_dir = "./stol_its_conversion"
+    def render_sequence(self,name,data,h_name=None):
+        comments=self.process_comments(name)
+        logging.debug(f"Rendering sequence {name} with data: {json.dumps(data, indent=4)}")
+        rendered_template=self.templates["SEQUENCE"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            members=data['members'],
+            includes=data['includes'],
+            comments=comments
+        )
+
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.cpp"), "w") as f:
+            f.write(rendered_template)
+
+
+        rendered_template=self.templates["HEADER"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            include_name=f"{h_name}.h" if h_name else f"{name}.h"
+        )
+
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
+            f.write(rendered_template)
+
+    def render_sequence_of(self,name,data):
+        comments=self.process_comments(name)
+        data['includes'].append({
+            "name":f"{name}.h"
+        })
+        logging.debug(f"Rendering sequence_of {name} with data: {json.dumps(data, indent=4)}")
+        rendered_template=self.templates["SEQUENCE_OF"].render(
+            **data,
+            comments=comments
+        )
+
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.cpp"), "w") as f:
+            f.write(rendered_template)
+
+
+        rendered_template=self.templates["HEADER"].render(
+            function_name=self.validate_name(name),
+            struct_name=f"{self.validate_name(name)}_t",
+            include_name=f"{name}.h"
+        )
+
+        with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
+            f.write(rendered_template)
+
+    def initialize(self):
+        files=[self.input_file_path]
+
+        asn1_docs,asn1_raw=parseAsn1Files(files)
+        self.docs=asn1_docs
+        self.raw=asn1_raw
+
+        self.types=extractAsn1TypesFromDocs(asn1_docs)
+        self.values=extractAsn1ValuesFromDocs(asn1_docs)
+        self.sets=extractAsn1SetsFromDocs(asn1_docs)
+        self.classes=extractAsn1ClassesFromDocs(asn1_docs)
+
+        
+
+        updated_classes={}
+        for class_name, class_body in self.classes.items():
+            members=class_body['members']
+
+            for member in members:
+                if not member:
+                    continue
+
+                member_type=member['type']
+                member_name=member['name']
+
+                if not member_name or not member_type:
+                    continue
+
+                updated_classes[f"{class_name}.{member_name}"] = member_type
+
+        self.classes=updated_classes
+
+
+        # look for set in spec files and replace its content with the actual type
+        for key, value in list(self.types.items()):
+            if "parameters" in value:
+                parameters = value['parameters']
+                if parameters[0] == "Set":
+                    self.types[key]['type']="CLASS"
+
+            class_type=None
+            if "members" in value:
+                members = value['members']
+                for member in members:
+                    if not member:
+                        continue
+
+                    member_type = member['type']
+                    class_type=member['type'].split(".")[0]
+                    if member_type in self.classes:
+                        member['type'] = self.classes[member_type]
+
+            new_types={}
+            for set_key, set_value in self.sets.items():
+                set_class=set_value['class']
+                members=set_value['members']
+               
+                if set_class==class_type:
+                    new_types[set_key]={
+                        "type":"CHOICE",
+                        "members":[]
+                    }
+                    for member in members:
+                        if not member:
+                            continue
+
+                        member_type = member['type']
+                        new_types[set_key]['members'].append({
+                            "type":member_type,
+                            "name": member_type
+                        })
+
+            if new_types:
+                self.types[key]["class_members"]=new_types
+
+
+        self.process_types()
+        # with open(f"./{self.name}_types.json", "w") as f:
+        #     json.dump(self.types, f, indent=4)
+
+        # with open(f"./{self.name}_values.json", "w") as f:
+        #     json.dump(self.values, f, indent=4)
+        
+        # with open(f"./{self.name}_sets.json", "w") as f:
+        #     json.dump(self.sets, f, indent=4)
+        
+        # with open(f"./{self.name}_classes.json", "w") as f:
+        #     json.dump(self.classes, f, indent=4)
+
+if __name__ =="__main__":
+
+    output_dir="./stol_its_conversion"
+    input_dir="./asn1/raw/carma_j2735"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     else:
-    # if present, clear the directory and create two directories
-        log_info(f"Clearing existing output directory: {output_dir}")
-        spec_files=os.listdir("./asn1/raw/carma_j2735")
-
-        for spec_file in spec_files:
-            if not spec_file.endswith(".asn") and not spec_file.endswith(".asn1"):
-                continue
-
-            name=spec_file.split(".")[0]
-
-            if not os.path.exists(os.path.join(output_dir, name)):
-                os.makedirs(os.path.join(output_dir, name))
-
-            print(f"Processing {spec_file} ...")
-            file_path=os.path.join("./asn1/raw/carma_j2735",spec_file)
-            final_output_dir=os.path.join(output_dir, name)
-            generate_code(file_path,final_output_dir)
+        pass
 
 
-if __name__ == "__main__":
-    main()
+
+    spec_files=os.listdir(input_dir)
+
+    for spec_file in spec_files:
+        if not spec_file.endswith(".asn1"):
+            continue
+
+        name=spec_file.split(".")[0]
+
+        if not os.path.exists(os.path.join(output_dir, name)):
+            os.makedirs(os.path.join(output_dir, name))
+
+        file_path=os.path.join(input_dir, spec_file)
+        final_output_dir=os.path.join(output_dir, name)
+
+        codegen=CodeGen()
+        codegen.name=name
+        codegen.out_dir=final_output_dir
+        codegen.input_file_path=file_path
+        codegen.initialize()

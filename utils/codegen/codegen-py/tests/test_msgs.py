@@ -44,10 +44,6 @@ BSM1 = {
 }
 
 BSM2 = {
-  
-  
-    "messageId": 20,
-    "value": {
       "coreData": {
         "msgCnt": 58,
         "id": b'\xF0\x3A\xD6\x10',
@@ -126,8 +122,6 @@ BSM2 = {
         }
       ],
       "regional": []
-    }
-  
 }
 
 

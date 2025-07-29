@@ -14,19 +14,21 @@ using json = nlohmann::json;
 {{ comment }}
 {%- endfor %}
 {%- endif %}
-}
+
 */
 
-const char* {{ struct_name }}_names[] = {
-    {%- for member in members %}
-    "{{ member.name }}",
-    {%- endfor %}
-};
 
-json to_JSON_{{ struct_name }}(const {{ struct_name }}_t& obj) {
+
+json to_JSON_{{ function_name }}(const {{ struct_name }}& obj) {
     if (!obj.buf || obj.size == 0) {
         return nullptr;
     }
+
+    const char* {{ function_name }}_names[] = {
+    {%- for member in members %}
+        "{{ member.name }}",
+        {%- endfor %}
+    };
 
     int bit_index = -1;
     size_t total_bits = obj.size * 8 - obj.bits_unused;
@@ -41,40 +43,70 @@ json to_JSON_{{ struct_name }}(const {{ struct_name }}_t& obj) {
     }
 
     if (bit_index >= 0 && bit_index < {{ members | length }}) {
-        return {{ struct_name }}_names[bit_index];
+        return {{ function_name }}_names[bit_index];
     }
 
     return nullptr;
 }
 
 
-{{ struct_name }}_t to_STRUCT_{{ struct_name }}(const json& j) {
-    {{ struct_name }}_t obj;
+{{ struct_name }} to_STRUCT_{{ function_name }}(const json& j) {
+    {{ struct_name }} obj;
 
     // Initialize all bits to 0
     obj.buf = nullptr;
     obj.size = 0;
     obj.bits_unused = 0;
 
-    if (j.is_null() || !j.is_string()) {
-        return obj;  // Return empty object if JSON is null or not a string
+    if (j.is_null() || !j.is_array()) {
+        return obj;  // Return empty object if JSON is null or not an array
     }
 
-    std::string value = j.get<std::string>();
-    for (size_t i = 0; i < {{ members | length }}; ++i) {
-        if (value == {{ struct_name }}_names[i]) {
-            // Set the corresponding bit
-            size_t byte_index = i / 8;
-            size_t bit_pos = 7 - (i % 8);  // Big-endian
-            if (obj.size <= byte_index) {
-                obj.buf = (uint8_t*)calloc(byte_index + 1, sizeof(uint8_t));
-                obj.size = byte_index + 1;
+    const char* {{ function_name }}_names[] = {
+    {%- for member in members %}
+        "{{ member.name }}",
+        {%- endfor %}
+    };
+
+    for(const auto& val : j){
+        if(!val.is_string()) continue;
+
+        std::string name=val.get<std::string>();
+
+        for(size_t i = 0; i < {{ members | length }}; ++i) {
+            if (name == {{ function_name }}_names[i]) {
+                size_t byte_index = i/8;
+                size_t bit_pos = 7 - (i % 8);  // Big-endian
+                if (obj.size<=byte_index){
+                    size_t old_size = obj.size;
+                    obj.size = byte_index + 1;
+                    obj.buf= static_cast<uint8_t*>(realloc(obj.buf, obj.size));
+                    if (!obj.buf) {
+                        throw std::runtime_error("Memory allocation failed.");
+                    }
+
+                    if(old_size < obj.size) {
+                        memset(obj.buf + old_size, 0, obj.size - old_size);
+                    }
+                }
+
+                obj.buf[byte_index] |= (1 << bit_pos);
+                break;
             }
-            obj.buf[byte_index] |= (1 << bit_pos);
-            return obj;
+        }
+
+    }
+
+    size_t total_bits = obj.size * 8;
+    size_t used_bits = 0;
+    for (size_t i = 0; i < {{members | length}}; ++i) {
+        size_t byte_index = i / 8;
+        size_t bit_pos = 7 - (i % 8);  // Big-endian
+        if (obj.buf[byte_index] & (1 << bit_pos)) {
+            used_bits=i+1;
         }
     }
-
-    return obj;  // Return empty object if no match found
+    obj.bits_unused = (8 - (used_bits % 8)) % 8;  // Calculate unused bits
+    return obj;
 }
 
