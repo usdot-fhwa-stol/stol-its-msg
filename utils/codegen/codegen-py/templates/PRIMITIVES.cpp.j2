@@ -14,10 +14,18 @@ using json = nlohmann::json;
 */
 
 json to_JSON_{{function_name}}(const {{struct_name}}& obj) {
-   return json(obj);
+    {% if data_type == "BOOLEAN" %}
+    return json(static_cast<bool>(obj));
+    {% else %}
+    return json(obj);
+    {% endif %}
 }
 
 {{struct_name}} to_STRUCT_{{function_name}}(const json& j) {
+    {% if data_type == "BOOLEAN" %}
+    return j.get<bool>();
+    {% else %}
     return j.get<{{struct_name}}>();
+    {% endif %}
 }
 

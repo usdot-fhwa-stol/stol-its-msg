@@ -405,12 +405,14 @@ class CodeGen:
             elif d_type=="SEQUENCE OF":
                 response=self.process_sequence_of(key,value)
                 self.render_sequence_of(key,response)
+
             elif d_type=="ENUMERATED":
                 response=self.process_enumerated(key,value)
                 response['includes'].append({
                     "name": f"{self.validate_name(key)}_converter.hpp"
                 })
                 self.render_enumerated(key,response)
+
             elif d_type=="OCTET STRING" or d_type=="IA5String":
                 response=self.process_strings(key,value)
                 logging.debug(f"process_strings response for {key}: {json.dumps(response, indent=4)}")
@@ -580,6 +582,7 @@ class CodeGen:
         rendered_template=self.templates["PRIMITIVES"].render(
             function_name=self.validate_name(name),
             struct_name=f"{self.validate_name(name)}_t",
+            data_type=data['type'],
             includes=includes,
             comments=comments
         )
@@ -723,8 +726,8 @@ class CodeGen:
 
 
         self.process_types()
-        # with open(f"./{self.name}_types.json", "w") as f:
-        #     json.dump(self.types, f, indent=4)
+        with open(f"./{self.name}_types.json", "w") as f:
+            json.dump(self.types, f, indent=4)
 
         # with open(f"./{self.name}_values.json", "w") as f:
         #     json.dump(self.values, f, indent=4)
