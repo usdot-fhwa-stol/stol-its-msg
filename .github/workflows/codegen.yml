@@ -49,7 +49,7 @@ jobs:
       matrix:
         include:
           - message: carma_j2735
-            script: utils/codegen/asn1ToC/asn1ToC.py asn1/raw/carma_j2735/TestMessage00.asn -t carma_j2735 -o stol_its_coding -di asn1c:ci
+            script: utils/codegen/asn1ToC/asn1ToC.py asn1/raw/carma_j2735/ -t carma_j2735 -o stol_its_coding -di asn1c:ci
 
     steps:
       - name: Checkout code
