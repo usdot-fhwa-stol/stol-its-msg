@@ -58,7 +58,7 @@ json to_JSON_{{function_name}}(const {{struct_name}}& obj) {
             }
             {% for choice in member.choices %}
             case {{member.struct_name}}_PR_{{choice.name}}:{
-                j_{{member.name}} = to_JSON_{{choice.function_name}}(obj.{{member.name}}->choice.{{choice.name}});
+                j_{{member.name}}["{{choice.name}}"] = to_JSON_{{choice.function_name}}(obj.{{member.name}}->choice.{{choice.name}});
                 break;
             }
             {% endfor %}
@@ -76,7 +76,7 @@ json to_JSON_{{function_name}}(const {{struct_name}}& obj) {
         }
         {% for choice in member.choices %}
         case {{member.struct_name}}_PR_{{choice.name}}:{
-            j_{{member.name}} = to_JSON_{{choice.function_name}}(obj.{{member.name}}.choice.{{choice.name}});
+            j_{{member.name}}["{{choice.name}}"] = to_JSON_{{choice.function_name}}(obj.{{member.name}}.choice.{{choice.name}});
             break;
         }
         {% endfor %}
