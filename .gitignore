@@ -7,6 +7,11 @@ asn1tools.changes.md
 stol_its_coding
 stol_its_conversion
 stol_its_testing
+assets/*.cpp
+assets/*.json
+
+asn1/*
+!asn1/raw/carma_j2735/TestMessage00.asn1
 
 CMakeFiles/
 Makefile

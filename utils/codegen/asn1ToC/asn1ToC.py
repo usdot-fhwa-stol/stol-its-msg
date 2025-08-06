@@ -48,10 +48,8 @@ def parseCli():
         description="Creates header and source files from ASN1 definitions using asn1c.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("files", type=str, nargs="+", help="ASN1 files directory")
     parser.add_argument("-o", "--output-dir", type=str, required=True, help="output package directory")
     parser.add_argument("-td", "--temp-dir", type=str, default=None, help="temporary directory for mounting files to container; uses tempfile by default")
-    parser.add_argument("-t", "--type", type=str, required=True, help="ASN1 type")
     parser.add_argument("-di", "--docker-image", type=str, default="ghcr.io/ika-rwth-aachen/etsi_its_messages:asn1c", help="asn1c Docker image")
 
     args = parser.parse_args()
@@ -95,7 +93,10 @@ def adjustIncludes(parent_path: str):
 
 
 def modifyIncludesInFile(args):
-
+    """
+        Modifies the include statements in a C/C++ source file.
+        Replaces angle brackets with double quotes for includes.
+    """
     file_path=args
     with open(file_path, "r") as f:
         data=f.read()
@@ -110,6 +111,45 @@ def modifyIncludes(parent_path: str):
     files_to_process=[(os.path.join(parent_path, f)) for f in files if f.endswith(".h") or f.endswith(".c")]
     with Pool(max(1, min(ceil(os.cpu_count() * 0.8), os.cpu_count() - 1))) as pool:
         dummy = list(tqdm(pool.imap(modifyIncludesInFile, files_to_process), total=len(files_to_process), desc="Adjusting includes"))
+
+def replaceWithUnderscoreInFile(args):
+    """
+        Replaces all occurrences of '-' with '_' in the file names.
+    """
+    file_path=args
+    new_file_path=file_path.replace("-", "_")
+    if new_file_path != file_path:
+        os.rename(file_path, new_file_path)
+        # print(f"Renamed {file_path} to {new_file_path}")
+
+    """
+        Replace all occurrences of '-' with '_' in includes of the file.
+    """
+    def replace_dashes(match):
+        path = match.group(1)  # filename inside quotes
+        return f'#include "{path.replace("-", "_")}"'
+
+    def replace_dashes_angle(match):
+        path = match.group(1)  # filename inside < >
+        return f'#include <{path.replace("-", "_")}>'
+
+    with open(new_file_path, "r") as f:
+        data = f.read()
+        updated_content = re.sub(r'#include\s+"([^"]+)"', replace_dashes, data)
+        updated_content = re.sub(r'#include\s+<([^>]+)>', replace_dashes_angle, updated_content)
+
+    with open(new_file_path, "w") as f:
+        f.write(updated_content)
+
+def replaceWithUnderscore(parent_path: str):
+    """
+        Replaces all occurrences of '-' with '_' in the file names in the given directory.
+    """
+    files=os.listdir(parent_path)
+    
+    files_to_process=[(os.path.join(parent_path, f)) for f in files if f.endswith(".h") or f.endswith(".c")]
+    with Pool(max(1, min(ceil(os.cpu_count() * 0.8), os.cpu_count() - 1))) as pool:
+        dummy = list(tqdm(pool.imap(replaceWithUnderscoreInFile, files_to_process), total=len(files_to_process), desc="Replacing '-' with '_' in file names"))
 
 def adjust_ext(file):
     print(f"Adjusting extensions of input files ...")
@@ -168,7 +208,9 @@ def main():
 
     args = parseCli()
 
-    for dir_path in args.files:
+    input_dir=[os.path.realpath("./asn1/processed/")]
+
+    for dir_path in input_dir:
         if not os.path.isdir(dir_path):
             raise ValueError(f"Provided path '{dir_path}' is not a directory.")
         asn1_files = glob.glob(os.path.join(dir_path, "*.asn1"))
@@ -227,13 +269,10 @@ def main():
             modifyIncludes(output_include_dir)
             modifyIncludes(output_source_dir)
 
-            print(f"Applying patches ...")
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            patch_file = os.path.join(script_dir, f"patches/{args.type}.patch")
-            if os.path.exists(patch_file):
-                subprocess.run(["git", "apply", patch_file], check=True)
 
-            print(f"Generated C/C++ library for {args.type}")
+            replaceWithUnderscore(output_include_dir)
+            replaceWithUnderscore(output_source_dir)
+
 
 if __name__ == "__main__":
 

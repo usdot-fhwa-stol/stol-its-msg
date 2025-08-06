@@ -3,15 +3,10 @@ from asn1CodeGenerationUtils import *
 from asn1ToConversionHeader import loadJinjaTemplates
 import json
 import logging
+import re
+import argparse
 
-logging.basicConfig(
-    level=logging.DEBUG,  # Can be DEBUG, INFO, WARNING, ERROR, CRITICAL
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),                    # Console
-        logging.FileHandler("codegen2.log","w")   # File
-    ]
-)
+
 
 
 class CodeGen:
@@ -34,6 +29,8 @@ class CodeGen:
         self.c_keywords = { "int", "float", "long","double", "char", "void", "if", "else", "while", "for", "return", "break", "continue", "switch", "case", "default", "struct", "union", "typedef", "static", "extern", "const", "volatile","class" }
         self.asn1_types=['SEQUENCE', 'SEQUENCE OF','CHOICE', 'ENUMERATED', 'OCTET STRING', 'BIT STRING', 'UTF8String', 'IA5String']
         self.asn1_primitives=['INTEGER', 'BOOLEAN']
+
+        self.actual_types={}
 
     def validate_name(self, name):
         return name.replace(" ","_").replace("-","_")
@@ -80,7 +77,7 @@ class CodeGen:
             })
 
         includes=[{
-            "name": f"{name}.h"
+            "name": f"{self.validate_name(name)}.h"
         }]
 
         return {
@@ -122,6 +119,10 @@ class CodeGen:
 
             if "actual-parameters" in member:
                 actual_type=member['actual-parameters'][0]['type']
+                if member_type not in self.actual_types:
+                    self.actual_types[member_type]=set()
+                self.actual_types[member_type].add(actual_type)
+
                 member_data.append({
                     "item_type": "complex",
                     "struct_name": f"{self.validate_name(actual_type)}_t",
@@ -223,6 +224,10 @@ class CodeGen:
             actual_parameters=element['actual-parameters']
             actual_type=actual_parameters[0]['type']
 
+            if element_type not in self.actual_types:
+                self.actual_types[element_type]=set()
+            self.actual_types[element_type].add(actual_type)
+
             includes.append({
                 "name": f"{element_type}.h"
             })
@@ -291,6 +296,10 @@ class CodeGen:
             if "actual-parameters" in member:
                 actual_type=member['actual-parameters'][0]['type']
                 
+                if member_type not in self.actual_types:
+                    self.actual_types[member_type]=set()
+                self.actual_types[member_type].add(actual_type)
+                
                 choices.append({
                     "name": self.validate_name(member_name),
                     "item_type":"complex",
@@ -344,7 +353,9 @@ class CodeGen:
         members=body['members']
         class_members=body['class_members']
 
-        for class_member in class_members:
+        actual_members=self.actual_types.get(key, {})
+
+        for class_member in actual_members:
             new_type={
                 "type":"SEQUENCE",
                 "members":[
@@ -393,7 +404,7 @@ class CodeGen:
         for key,value in list(self.types.items()):
             d_type=value['type']
 
-            logging.debug(f"Processing type {key} with type {d_type}")
+            logging.info(f"Processing type {key} with type {d_type}")
 
             if d_type=="SEQUENCE":
                 response=self.process_sequence(key,value)
@@ -439,19 +450,18 @@ class CodeGen:
                 })
                 self.render_bit_string(key,response)
                 
-                
-            elif d_type=="CLASS":
-                self.process_class(key,value)
             elif d_type in self.asn1_primitives:
                 self.render_primitive(key,value)
+
             else:
-                self.render_primitive(key, value)
+                if d_type!="CLASS":
+                    self.render_primitive(key, value)
 
 
     def render_bit_string(self,name,data):
         comments=self.process_comments(name)
         data['includes'].append({
-            "name": f"{name}.h"
+            "name": f"{self.validate_name(name)}.h"
         })
 
         rendered_template=self.templates["BIT_STRING"].render(
@@ -468,7 +478,7 @@ class CodeGen:
         rendered_template=self.templates["HEADER"].render(
             function_name=self.validate_name(name),
             struct_name=f"{self.validate_name(name)}_t",
-            include_name=f"{name}.h"
+            include_name=f"{self.validate_name(name)}.h"
         )
         with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
             f.write(rendered_template)
@@ -476,7 +486,7 @@ class CodeGen:
     def render_octet_string(self,name,data):
         comments=self.process_comments(name)
         data['includes'].append({
-            "name": f"{name}.h"
+            "name": f"{self.validate_name(name)}.h"
         })
 
         rendered_template=self.templates["OCTET_STRING"].render(
@@ -493,7 +503,7 @@ class CodeGen:
         rendered_template=self.templates["HEADER"].render(
             function_name=self.validate_name(name),
             struct_name=f"{self.validate_name(name)}_t",
-            include_name=f"{name}.h"
+            include_name=f"{self.validate_name(name)}.h"
         )
         with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
             f.write(rendered_template)
@@ -501,7 +511,7 @@ class CodeGen:
     def render_ia5string(self,name,data):
         comments=self.process_comments(name)
         data['includes'].append({
-            "name": f"{name}.h"
+            "name": f"{self.validate_name(name)}.h"
         })
 
         rendered_template=self.templates["IA5STRING"].render(
@@ -518,7 +528,7 @@ class CodeGen:
         rendered_template=self.templates["HEADER"].render(
             function_name=self.validate_name(name),
             struct_name=f"{self.validate_name(name)}_t",
-            include_name=f"{name}.h"
+            include_name=f"{self.validate_name(name)}.h"
         )
         with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
             f.write(rendered_template)
@@ -527,7 +537,7 @@ class CodeGen:
         comments=self.process_comments(name)
         
         data['includes'].append({
-            "name": f"{name}.h"
+            "name": f"{self.validate_name(name)}.h"
         })
 
         rendered_template=self.templates["CHOICE"].render(
@@ -544,7 +554,7 @@ class CodeGen:
         rendered_template=self.templates["HEADER"].render(
             function_name=self.validate_name(name),
             struct_name=f"{self.validate_name(name)}_t",
-            include_name=f"{name}.h"
+            include_name=f"{self.validate_name(name)}.h"
         )
         with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
             f.write(rendered_template)
@@ -567,7 +577,7 @@ class CodeGen:
         rendered_template=self.templates["HEADER"].render(
             function_name=self.validate_name(name),
             struct_name=f"{self.validate_name(name)}_t",
-            include_name=f"{name}.h"
+            include_name=f"{self.validate_name(name)}.h"
         )
         with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
             f.write(rendered_template)
@@ -576,7 +586,7 @@ class CodeGen:
         comments=self.process_comments(name)
         includes=[]
         includes.append({
-            "name": f"{name}.h"
+            "name": f"{self.validate_name(name)}.h"
         })
 
         rendered_template=self.templates["PRIMITIVES"].render(
@@ -593,7 +603,7 @@ class CodeGen:
         rendered_template=self.templates["HEADER"].render(
             function_name=self.validate_name(name),
             struct_name=f"{self.validate_name(name)}_t",
-            include_name=f"{name}.h"
+            include_name=f"{self.validate_name(name)}.h"
         )
         with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
             f.write(rendered_template)
@@ -619,7 +629,7 @@ class CodeGen:
         rendered_template=self.templates["HEADER"].render(
             function_name=self.validate_name(name),
             struct_name=f"{self.validate_name(name)}_t",
-            include_name=f"{h_name}.h" if h_name else f"{name}.h"
+            include_name=f"{self.validate_name(h_name)}.h" if h_name else f"{self.validate_name(name)}.h"
         )
 
         with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
@@ -628,7 +638,7 @@ class CodeGen:
     def render_sequence_of(self,name,data):
         comments=self.process_comments(name)
         data['includes'].append({
-            "name":f"{name}.h"
+            "name":f"{self.validate_name(name)}.h"
         })
         logging.debug(f"Rendering sequence_of {name} with data: {json.dumps(data, indent=4)}")
         rendered_template=self.templates["SEQUENCE_OF"].render(
@@ -643,13 +653,61 @@ class CodeGen:
         rendered_template=self.templates["HEADER"].render(
             function_name=self.validate_name(name),
             struct_name=f"{self.validate_name(name)}_t",
-            include_name=f"{name}.h"
+            include_name=f"{self.validate_name(name)}.h"
         )
 
         with open(os.path.join(self.out_dir, f"{self.validate_name(name)}_converter.hpp"), "w") as f:
             f.write(rendered_template)
 
+    def pre_process(self):
+        """
+            asn1tools doesn't support multiple namespaces in a single file.
+            This function combines all namespaces into a single namespace that allows
+            code generation for C++ encoding and decoding functions.
+        """
+
+        input_file=self.input_file_path
+        with open(input_file, 'r') as f:
+            lines = f.readlines()
+
+        namespaces=set()
+        for line in lines:
+            if "::=" in line and "BEGIN" in line:
+                namespace = line.split()[0].strip()
+                namespaces.add(namespace)
+                
+
+
+        if len(namespaces) > 1:
+            new_lines=[]
+            for line in lines:
+                if "::=" in line and "BEGIN" in line:
+                    continue
+                
+                if "END" in line:
+                    continue
+
+                new_lines.append(line)
+            
+
+            for idx in range(len(new_lines)):
+                for namespace in namespaces:
+                    pattern_namespace = rf'{re.escape(namespace)}\.'
+                    new_lines[idx] = re.sub(pattern_namespace, '', new_lines[idx])
+
+            spec_name= os.path.basename(input_file)
+            spec_name = spec_name.split(".")[0]
+
+            with open(self.input_file_path, 'w') as f:
+                f.write(f"{spec_name.replace('_', '-')} DEFINITIONS AUTOMATIC TAGS ::= BEGIN\n\n")
+                f.writelines(new_lines)
+                f.write("END\n")
+
+
     def initialize(self):
+
+        self.pre_process()
+
         files=[self.input_file_path]
 
         asn1_docs,asn1_raw=parseAsn1Files(files)
@@ -725,29 +783,81 @@ class CodeGen:
                 self.types[key]["class_members"]=new_types
 
 
+        for key, value in self.types.items():
+            if self.types[key]["type"]=="SEQUENCE":
+                members=value['members']
+
+                for member in members:
+                    if not member:
+                        continue
+
+                    member_type=member['type']
+                    if member_type=="OpenType":
+                        content=member['table'][0]
+
+                        if value["class_members"][content]:
+                            member['type']=value["class_members"][content]['type']
+                            member['members']=value["class_members"][content]['members']
+
+        logging.info(f"processing types for {self.name} with {len(self.types)} types")
         self.process_types()
-        with open(f"./{self.name}_types.json", "w") as f:
-            json.dump(self.types, f, indent=4)
+        # with open(f"./{self.name}_types.json", "w") as f:
+        #     json.dump(self.types, f, indent=4)
 
-        # with open(f"./{self.name}_values.json", "w") as f:
-        #     json.dump(self.values, f, indent=4)
-        
-        # with open(f"./{self.name}_sets.json", "w") as f:
-        #     json.dump(self.sets, f, indent=4)
-        
-        # with open(f"./{self.name}_classes.json", "w") as f:
-        #     json.dump(self.classes, f, indent=4)
+        logging.debug(f"Types after processing: {json.dumps(self.types, indent=4)}")
 
-if __name__ =="__main__":
+        logging.info(f"processing classes for {self.name} with {len(self.classes)} classes")
+        for key,value in list(self.types.items()):
+            d_type=value['type']
 
-    output_dir="./stol_its_conversion"
-    input_dir="./asn1/raw/carma_j2735"
+            logging.info(f"Processing type {key} with type {d_type}")
+
+            if d_type=="CLASS":
+                self.process_class(key,value)
+def parseCli():
+    """Parses script's CLI arguments.
+
+    Returns:
+        argparse.Namespace: arguments
+    """
+
+    parser = argparse.ArgumentParser(
+        description="Generates C++ encoding and decoding functions from ASN.1 definitions.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    
+    parser.add_argument("-o", "--output-dir", type=str, required=True, help="output package directory")
+
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
+        help="Logging level"
+    )
+
+    args = parser.parse_args()
+
+    return args
+
+def main():
+
+    args=parseCli()
+
+    logging.basicConfig(
+        level=args.log_level,  # Can be DEBUG, INFO, WARNING, ERROR, CRITICAL
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(),                    # Console
+            logging.FileHandler("CodeGen.log","w")   # File
+        ]
+    )
+
+    output_dir=args.output_dir
+
+    input_dir="./asn1/processed/"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    else:
-        pass
-
-
+    
 
     spec_files=os.listdir(input_dir)
 
@@ -768,3 +878,7 @@ if __name__ =="__main__":
         codegen.out_dir=final_output_dir
         codegen.input_file_path=file_path
         codegen.initialize()
+
+
+if __name__ =="__main__":
+    main()

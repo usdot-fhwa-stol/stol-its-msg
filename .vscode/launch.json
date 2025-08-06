@@ -19,14 +19,22 @@
     ],
     "configurations": [
         {
+            "name":"CARMA (preprocessing)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "utils/codegen/codegen-py/preProcess.py",
+            "args": [
+
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "CARMA (coding)",
             "type": "debugpy",
             "request": "launch",
             "program": "utils/codegen/asn1ToC/asn1ToC.py",
             "args": [
-                "asn1/raw/carma_j2735/",
-                "-t",
-                "carma_j2735",
                 "-o",
                 "stol_its_coding"
             ],
@@ -39,18 +47,13 @@
             "request": "launch",
             "program": "utils/codegen/codegen-py/codeGeneration.py",
             "args": [
+                "-o",
+                "stol_its_conversion",
+                "--log-level",
+                "DEBUG"
             ],
             "console": "integratedTerminal",
             "justMyCode": true
         }
-        // {
-        //     "name":"CARMA (testing)",
-        //     "type": "debugpy",
-        //     "request": "launch",
-        //     "program":"utils/codegen/codegen-py/tests/test_asn1ToJson.py",
-        //     "args":[],
-        //     "console": "integratedTerminal",
-        //     "justMyCode": true
-        // }
     ]
 }

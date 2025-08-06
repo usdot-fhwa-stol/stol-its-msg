@@ -4,19 +4,28 @@ project(stol_its_msg C CXX)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 
+set(CMAKE_CODING_INPUT_DIR "" CACHE STRING "Directory containing ASN.1 C coding files")
+set(CMAKE_CONVERSION_INPUT_DIR "" CACHE STRING "Directory containing ASN.1 conversion files")
+
+# Print them for verification
+message(STATUS "CODING_INPUT_DIR: ${CODING_INPUT_DIR}")
+message(STATUS "CONVERSION_INPUT_DIR: ${CONVERSION_INPUT_DIR}")
+
+
 message(STATUS "C Compiler: ${CMAKE_C_COMPILER}")
 message(STATUS "C++ Compiler: ${CMAKE_CXX_COMPILER}")
 
-file(GLOB SPEC_FILES "${CMAKE_SOURCE_DIR}/asn1/raw/carma_j2735/*.asn1")
+file(GLOB SPEC_FILES "${CMAKE_SOURCE_DIR}/asn1/processed/*.asn1")
 foreach(spec_file ${SPEC_FILES})
     get_filename_component(fname ${spec_file} NAME)
     string(REPLACE ".asn1" "" fname ${fname})
     message(STATUS "Processing ASN.1 specification file: ${fname}")
 
 
-    set(SRC_DIR "${CMAKE_SOURCE_DIR}/stol_its_coding/${fname}/src")
-    set(INC_DIR "${CMAKE_SOURCE_DIR}/stol_its_coding/${fname}/include")
+    set(SRC_DIR "${CMAKE_SOURCE_DIR}/${CODING_INPUT_DIR}/${fname}/src")
+    set(INC_DIR "${CMAKE_SOURCE_DIR}/${CODING_INPUT_DIR}/${fname}/include")
     set(OBJ_DIR "${CMAKE_BINARY_DIR}/${fname}/obj")
+
 
     file(GLOB HEADER_FILES "${INC_DIR}/*.h")
     foreach(header ${HEADER_FILES})
@@ -35,7 +44,7 @@ foreach(spec_file ${SPEC_FILES})
     add_library(c_objlib_${fname} OBJECT ${ASN1_FILES})
 
 
-    set(CODEGEN_DIR "${CMAKE_SOURCE_DIR}/stol_its_conversion/${fname}/*")
+    set(CODEGEN_DIR "${CMAKE_SOURCE_DIR}/${CONVERSION_INPUT_DIR}/${fname}/*")
 
     file(GLOB CODEGEN_FILES "${CODEGEN_DIR}")
     foreach(file ${CODEGEN_FILES})
