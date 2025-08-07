@@ -23,7 +23,7 @@
 
 
 - To generate decoding functions for list of specification files in asn1/raw/carma_j2735 (this generates the conversion functions in stol_its_conversion )
-    - `python3 utils/codegen/codegen-py/codeGeneration.py -o stol_its_conversion --log-level DEBUG`
+    - `python3 utils/codegen/codegen-py/codeGeneration.py asn1/raw/carma_j2735/ -o stol_its_conversion --log-level DEBUG`
 
 - To build the project 
     - `chmod +x build.sh` (one time command)

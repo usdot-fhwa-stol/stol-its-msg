@@ -29,6 +29,7 @@ class CodeGen:
         self.asn1_types=['SEQUENCE', 'SEQUENCE OF','CHOICE', 'ENUMERATED', 'OCTET STRING', 'BIT STRING', 'UTF8String', 'IA5String']
         self.asn1_primitives=['INTEGER', 'BOOLEAN']
 
+        self.actual_types={}
 
     def validate_name(self, name):
         return name.replace(" ","_").replace("-","_")
@@ -442,14 +443,13 @@ class CodeGen:
                 self.render_bit_string(key,response)
                 
                 
-            elif d_type=="CLASS":
-                logging.info(f"Processing class {key}")
-                self.process_class(key,value)
             elif d_type in self.asn1_primitives:
                 logging.info(f"Rendering primitive {key} with type {d_type}")
                 self.render_primitive(key,value)
+
             else:
-                self.render_primitive(key, value)
+                if d_type!="CLASS":
+                    self.render_primitive(key, value)
 
 
     def render_bit_string(self,name,data):
@@ -729,8 +729,34 @@ class CodeGen:
                 self.types[key]["class_members"]=new_types
 
 
+        for key, value in self.types.items():
+            if self.types[key]["type"]=="SEQUENCE":
+                members=value['members']
+
+                for member in members:
+                    if not member:
+                        continue
+
+                    member_type=member['type']
+                    if member_type=="OpenType":
+                        content=member['table'][0]
+
+                        if value["class_members"][content]:
+                            member['type']=value["class_members"][content]['type']
+                            member['members']=value["class_members"][content]['members']
+
+        logging.info(f"processing types for {self.name} with {len(self.types)} types")
         self.process_types()
         logging.debug(f"Processed types: {json.dumps(self.types, indent=4)}")
+
+        logging.info(f"processing classes for {self.name} with {len(self.classes)} classes")
+        for key,value in list(self.types.items()):
+            d_type=value['type']
+
+            logging.info(f"Processing type {key} with type {d_type}")
+
+            if d_type=="CLASS":
+                self.process_class(key,value)
 
 
 def parseCli():
