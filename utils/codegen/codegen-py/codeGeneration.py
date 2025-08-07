@@ -3,15 +3,9 @@ from asn1CodeGenerationUtils import *
 from asn1ToConversionHeader import loadJinjaTemplates
 import json
 import logging
+import argparse
 
-logging.basicConfig(
-    level=logging.DEBUG,  # Can be DEBUG, INFO, WARNING, ERROR, CRITICAL
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),                    # Console
-        logging.FileHandler("codegen2.log","w")   # File
-    ]
-)
+
 
 
 class CodeGen:
@@ -34,6 +28,7 @@ class CodeGen:
         self.c_keywords = { "int", "float", "long","double", "char", "void", "if", "else", "while", "for", "return", "break", "continue", "switch", "case", "default", "struct", "union", "typedef", "static", "extern", "const", "volatile","class" }
         self.asn1_types=['SEQUENCE', 'SEQUENCE OF','CHOICE', 'ENUMERATED', 'OCTET STRING', 'BIT STRING', 'UTF8String', 'IA5String']
         self.asn1_primitives=['INTEGER', 'BOOLEAN']
+
 
     def validate_name(self, name):
         return name.replace(" ","_").replace("-","_")
@@ -393,17 +388,19 @@ class CodeGen:
         for key,value in list(self.types.items()):
             d_type=value['type']
 
-            logging.debug(f"Processing type {key} with type {d_type}")
+            logging.info(f"Processing type {key} with type {d_type}")
 
             if d_type=="SEQUENCE":
                 response=self.process_sequence(key,value)
                 response['includes'].append({
                     "name": f"{self.validate_name(key)}_converter.hpp"
                 })
+                logging.info(f"Rendering sequence {key}")
                 self.render_sequence(key,response)
                 
             elif d_type=="SEQUENCE OF":
                 response=self.process_sequence_of(key,value)
+                logging.info(f"Rendering SEQUENCE OF {key}")
                 self.render_sequence_of(key,response)
 
             elif d_type=="ENUMERATED":
@@ -411,6 +408,7 @@ class CodeGen:
                 response['includes'].append({
                     "name": f"{self.validate_name(key)}_converter.hpp"
                 })
+                logging.info(f"Rendering ENUMERATED {key}")
                 self.render_enumerated(key,response)
 
             elif d_type=="OCTET STRING" or d_type=="IA5String":
@@ -420,8 +418,10 @@ class CodeGen:
                     "name": f"{self.validate_name(key)}_converter.hpp"
                 })
                 if d_type=="OCTET STRING":
+                    logging.info(f"Rendering OCTET STRING {key}")
                     self.render_octet_string(key,response)
                 elif d_type=="IA5String":
+                    logging.info(f"Rendering IA5String {key}")
                     self.render_ia5string(key,response)
     
             elif d_type=="CHOICE":
@@ -430,6 +430,7 @@ class CodeGen:
                 response['includes'].append({
                     "name": f"{self.validate_name(key)}_converter.hpp"
                 })
+                logging.info(f"Rendering CHOICE {key}")
                 self.render_choice(key,response)
 
             elif d_type=="BIT STRING":
@@ -437,12 +438,15 @@ class CodeGen:
                 response['includes'].append({
                     "name": f"{self.validate_name(key)}_converter.hpp"
                 })
+                logging.info(f"Rendering BIT STRING {key}")
                 self.render_bit_string(key,response)
                 
                 
             elif d_type=="CLASS":
+                logging.info(f"Processing class {key}")
                 self.process_class(key,value)
             elif d_type in self.asn1_primitives:
+                logging.info(f"Rendering primitive {key} with type {d_type}")
                 self.render_primitive(key,value)
             else:
                 self.render_primitive(key, value)
@@ -726,28 +730,53 @@ class CodeGen:
 
 
         self.process_types()
-        with open(f"./{self.name}_types.json", "w") as f:
-            json.dump(self.types, f, indent=4)
+        logging.debug(f"Processed types: {json.dumps(self.types, indent=4)}")
 
-        # with open(f"./{self.name}_values.json", "w") as f:
-        #     json.dump(self.values, f, indent=4)
-        
-        # with open(f"./{self.name}_sets.json", "w") as f:
-        #     json.dump(self.sets, f, indent=4)
-        
-        # with open(f"./{self.name}_classes.json", "w") as f:
-        #     json.dump(self.classes, f, indent=4)
 
-if __name__ =="__main__":
+def parseCli():
+    """Parses script's CLI arguments.
 
-    output_dir="./stol_its_conversion"
-    input_dir="./asn1/raw/carma_j2735"
+    Returns:
+        argparse.Namespace: arguments
+    """
+
+    parser = argparse.ArgumentParser(
+        description="Generates C++ encoding and decoding functions from ASN.1 definitions.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    
+    parser.add_argument("files", type=str, nargs="+", help="ASN1 files directory")
+    parser.add_argument("-o", "--output-dir", type=str, required=True, help="output package directory")
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
+        help="Logging level"
+    )
+
+    args = parser.parse_args()
+
+    return args
+
+def main():
+
+    args=parseCli()
+
+    logging.basicConfig(
+        level=args.log_level,  # Can be DEBUG, INFO, WARNING, ERROR, CRITICAL
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(),                    # Console
+            logging.FileHandler("CodeGen.log","w")   # File
+        ]
+    )
+
+    output_dir=args.output_dir
+
+    input_dir=args.files[0]
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    else:
-        pass
-
-
+    
 
     spec_files=os.listdir(input_dir)
 
@@ -768,3 +797,8 @@ if __name__ =="__main__":
         codegen.out_dir=final_output_dir
         codegen.input_file_path=file_path
         codegen.initialize()
+
+if __name__ =="__main__":
+    main()
+
+

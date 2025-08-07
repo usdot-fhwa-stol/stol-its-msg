@@ -1,1 +1,0 @@
-perl -0777 -pi -e 's/union\s+(\w+)\s*\{\s*\}/union \1 { char _placeholder; }/g' ./stol_its_coding/BasicSafetyMessage/include/*.h

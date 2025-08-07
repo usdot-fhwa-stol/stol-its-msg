@@ -1,26 +1,29 @@
 TestMessage00 DEFINITIONS AUTOMATIC TAGS ::= BEGIN
-
-TestMessage00 ::= SEQUENCE {
-   header          MobilityHeader,
-   body            MobilityRequest
-   }
-
-MobilityECEFCoordinate ::= INTEGER(-638363700..638363700)
-
-MobilityLocation ::= SEQUENCE {
-   ecefX           MobilityECEFCoordinate,
-   ecefY           MobilityECEFCoordinate,
-   ecefZ           MobilityECEFCoordinate,
-   timestamp       MobilityTimestamp
+MessageFrame ::= SEQUENCE {
+    messageId DSRCmsgID,
+    value CHOICE { 
+     testMessage00     TestMessage00
+    }
 }
 
-MobilityPlanType ::= ENUMERATED {
-   unknown (0), 
-   changingLanesToTheLeft (1), 
-   changingLanesToTheRight (2), 
-   joinPlatoonAtRear (3),
-   platoonFollowerJoin (4)
+DSRCmsgID ::= INTEGER (0..32767)
+
+TestMessage00 ::= SEQUENCE {
+   -- TestMessage00 is only for MobilityRequest message
+   header          MobilityHeader,
+   body            MobilityRequest,
+   ...
    }
+MobilityLocationOffsets ::= SEQUENCE (SIZE(0..60)) OF MobilityECEFOffset
+
+MobilityUrgency ::= INTEGER (0..1000)
+   -- a value of 0 shall be used for unknown
+   -- a value of 1000 shall be used for the highest urgency
+
+MobilityECEFCoordinate ::= INTEGER(-638363700..638363700)
+   -- X, Y, Z coordinates in ECEF frame
+   -- LSB units are 1 cm
+   -- a value of 0 means unavaliable
 
 MobilityRequest ::= SEQUENCE {
    strategy        MobilityStrategy,
@@ -33,21 +36,30 @@ MobilityRequest ::= SEQUENCE {
    expiration      MobilityTimestamp OPTIONAL
 }
 
-MobilityDynamicID ::= IA5String (SIZE(8))
+MobilityParameters ::= IA5String (SIZE(2..1000))
+   -- the content of this string is defined by each plugin
 
-MobilityLocationOffsets ::= SEQUENCE (SIZE(0..60)) OF MobilityECEFOffset
+MobilityECEFOffsetCoordinate ::= INTEGER(-500..501)
+   -- offset in X, Y, Z coordinates in ECEF frame
+   -- LSB units are 1 cm
+   -- a value of 501 means unavaliable
+
+MobilityStrategy ::= IA5String (SIZE(2..50))
+   -- the desired strategy to handle this message
+   -- "[]" means not defined
+
+MobilityStaticID ::= IA5String (SIZE(2..16))
+   -- the license plate number for each vehicle
+   -- "[]" indicates ID is not specified
+
+MobilityDynamicID ::= IA5String (SIZE(8))
+   -- mobility dynamic ID is the same as host vehicle current BSM ID in hex string
 
 MobilityECEFOffset ::= SEQUENCE {
    offsetX         MobilityECEFOffsetCoordinate,
    offsetY         MobilityECEFOffsetCoordinate,
    offsetZ         MobilityECEFOffsetCoordinate
 }
-
-MobilityStrategy ::= IA5String (SIZE(2..50))
-
-MobilityTimestamp ::= IA5String (SIZE(19))
-
-MobilityECEFOffsetCoordinate ::= INTEGER(-500..501)
 
 MobilityHeader ::= SEQUENCE {
    hostStaticId    MobilityStaticID,
@@ -57,12 +69,28 @@ MobilityHeader ::= SEQUENCE {
    timestamp       MobilityTimestamp
 }
 
-MobilityUrgency ::= INTEGER (0..1000)
+MobilityPlanType ::= ENUMERATED {
+   unknown (0), 
+   changingLanesToTheLeft (1), 
+   changingLanesToTheRight (2), 
+   joinPlatoonAtRear (3),
+   platoonFollowerJoin (4),
+   ...
+   }
 
-MobilityStaticID ::= IA5String (SIZE(2..16))
+MobilityLocation ::= SEQUENCE {
+   ecefX           MobilityECEFCoordinate,
+   ecefY           MobilityECEFCoordinate,
+   ecefZ           MobilityECEFCoordinate,
+   timestamp       MobilityTimestamp
+}
+
+MobilityTimestamp ::= IA5String (SIZE(19))
+   -- UNIX timestamp in milliseconds in string, which indicates the time elapsed since UNIX epoch
+   -- the maximum value is the MAX_VALUE of Java Long type (which is in length 19)
 
 MobilityGUID ::= IA5String (SIZE(36))
-
-MobilityParameters ::= IA5String (SIZE(2..1000))
+   -- the unique ID for different plan/strategy events
+   -- in Java UUID format xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
 END

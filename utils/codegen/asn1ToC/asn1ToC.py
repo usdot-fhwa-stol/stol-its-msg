@@ -51,7 +51,6 @@ def parseCli():
     parser.add_argument("files", type=str, nargs="+", help="ASN1 files directory")
     parser.add_argument("-o", "--output-dir", type=str, required=True, help="output package directory")
     parser.add_argument("-td", "--temp-dir", type=str, default=None, help="temporary directory for mounting files to container; uses tempfile by default")
-    parser.add_argument("-t", "--type", type=str, required=True, help="ASN1 type")
     parser.add_argument("-di", "--docker-image", type=str, default="ghcr.io/ika-rwth-aachen/etsi_its_messages:asn1c", help="asn1c Docker image")
 
     args = parser.parse_args()
@@ -226,14 +225,6 @@ def main():
             # adjustIncludes(output_include_dir)
             modifyIncludes(output_include_dir)
             modifyIncludes(output_source_dir)
-
-            print(f"Applying patches ...")
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            patch_file = os.path.join(script_dir, f"patches/{args.type}.patch")
-            if os.path.exists(patch_file):
-                subprocess.run(["git", "apply", patch_file], check=True)
-
-            print(f"Generated C/C++ library for {args.type}")
 
 if __name__ == "__main__":
 
