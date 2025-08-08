@@ -46,6 +46,70 @@ json to_JSON_{{function_name}}(const {{struct_name}}& obj) {
     json {{ member.name }}_json = to_JSON_{{  member.function_name }}(obj.{{ member.name }});
     j["{{ member.name[0] |lower + member.name[1:] }}"] = {{ member.name }}_json;
     {%- endif %}
+    {% elif member.item_type =="sequence" %}
+    {% if member.is_optional %}
+    if (obj.{{ member.name }} != NULL) {
+        {% for s_member in member.members %}
+        {%- if s_member.item_type == 'simple' %}
+        {%- if s_member.is_optional %}
+        if (obj.{{ member.name }} != NULL) {
+            {% if s_member.data_type == "bool" %}
+            j["{{ s_member.name }}"] = static_cast<bool>(*(obj.{{ s_member.name }}));
+            {% else %}
+            j["{{ s_member.name }}"] = static_cast<long>(*(obj.{{ s_member.name }}));
+            {% endif %}
+        }
+        {%- else %}
+        {% if s_member.data_type == "bool" %}
+        j["{{ s_member.name }}"] = static_cast<bool>((obj.{{ s_member.name }}));
+        {% else %}
+        j["{{ s_member.name }}"] = static_cast<long>((obj.{{ s_member.name }}));
+        {% endif %}
+        {%- endif %}
+        {%- elif s_member.item_type == 'complex' %}
+        {%- if s_member.is_optional %}
+        if (obj.{{member.name}}->{{ s_member.name }} != NULL) {
+            json {{ s_member.name }}_json = to_JSON_{{  s_member.function_name }}(*obj.{{member.name}}->{{ s_member.name }});
+            j["{{ s_member.name[0] |lower + s_member.name[1:] }}"] = {{ s_member.name }}_json;
+        } 
+        {%- else %}
+        json {{ s_member.name }}_json = to_JSON_{{  s_member.function_name }}(obj.{{member.name}}->{{ s_member.name }});
+        j["{{ s_member.name[0] |lower + s_member.name[1:] }}"] = {{ s_member.name }}_json;
+        {%- endif %}
+        {%- endif %}
+        {% endfor %}
+    }
+    {% else %}
+    {% for s_member in member.members %}
+    {%- if s_member.item_type == 'simple' %}
+    {%- if s_member.is_optional %}
+    if (obj.{{ member.name }} != NULL) {
+        {% if s_member.data_type == "bool" %}
+        j["{{ s_member.name }}"] = static_cast<bool>(*(obj.{{ s_member.name }}));
+        {% else %}
+        j["{{ s_member.name }}"] = static_cast<long>(*(obj.{{ s_member.name }}));
+        {% endif %}
+    }
+    {%- else %}
+    {% if s_member.data_type == "bool" %}
+    j["{{ s_member.name }}"] = static_cast<bool>((obj.{{ s_member.name }}));
+    {% else %}
+    j["{{ s_member.name }}"] = static_cast<long>((obj.{{ s_member.name }}));
+    {% endif %}
+    {%- endif %}
+    {%- elif s_member.item_type == 'complex' %}
+    {%- if s_member.is_optional %}
+    if (obj.{{member.name}}->{{ s_member.name }} != NULL) {
+        json {{ s_member.name }}_json = to_JSON_{{  s_member.function_name }}(*obj.{{member.name}}->{{ s_member.name }});
+        j["{{ s_member.name[0] |lower + s_member.name[1:] }}"] = {{ s_member.name }}_json;
+    } 
+    {%- else %}
+    json {{ s_member.name }}_json = to_JSON_{{  s_member.function_name }}(obj.{{member.name}}->{{ s_member.name }});
+    j["{{ s_member.name[0] |lower + s_member.name[1:] }}"] = {{ s_member.name }}_json;
+    {%- endif %}
+    {%- endif %}
+    {% endfor %}
+    {% endif %}
     {% elif member.item_type == "choice"%}
     {% if member.is_optional %}
     if (obj.{{ member.name }} != NULL) {
@@ -145,6 +209,78 @@ json to_JSON_{{function_name}}(const {{struct_name}}& obj) {
     {%- else %}
     obj.{{ member.name }} = to_STRUCT_{{  member.function_name }}(j["{{ member.name[0] | lower + member.name[1:] }}"]);
     {%- endif %}
+    {% elif member.item_type =="sequence" %}
+    {% if member.is_optional %}
+    if (j.contains("{{ member.name }}")) {
+        {% for s_member in member.members %}
+        {%- if s_member.item_type == 'simple' %}
+        {%- if s_member.is_optional %}
+        if (j["{{ member.name }}"].contains("{{ s_member.name }}")) {
+            {% if s_member.data_type == "bool" %}
+            obj.{{ member.name }}->{{s_member.name}} = new BOOLEAN_t(j["{{ member.name }}"].at("{{ s_member.name }}").get<bool>() ? 1 : 0);
+            {% else %}
+            obj.{{ member.name }}->{{s_member.name}} = new long(j["{{ member.name }}"].at("{{ s_member.name }}").get<long>());
+            {% endif %}
+        } else{
+            obj.{{ member.name }}->{{ s_member.name }} = nullptr;  // or handle as needed
+        }
+        {%- else %}
+        {% if s_member.data_type == "bool" %}
+        obj.{{ member.name }}->{{ s_member.name }} = new BOOLEAN_t(j["{{ member.name }}"].at("{{ s_member.name }}").get<bool>() ? 1 : 0);
+        {% else %}
+        obj.{{ member.name }}->{{ s_member.name }} = new long(j["{{ member.name }}"].at("{{ s_member.name }}").get<long>());
+        {% endif %}
+        {%- endif %}
+        {%- elif s_member.item_type == 'complex' %}
+        {%- if s_member.is_optional %}
+        if (j["{{ member.name }}"].contains("{{ s_member.name[0] |lower + s_member.name[1:]  }}")) {
+            obj.{{ member.name }}->{{ s_member.name }} = new {{ s_member.struct_name }};
+            *(obj.{{ member.name }}->{{ s_member.name }}) = to_STRUCT_{{  s_member.function_name }}(j["{{ member.name }}"]["{{ s_member.name[0] | lower + s_member.name[1:] }}"]);
+        } else{
+            obj.{{ member.name }}->{{ s_member.name }} = nullptr;  // or handle as needed
+        }
+        {%- else %}
+        obj.{{ member.name }}->{{ s_member.name }} = to_STRUCT_{{  s_member.function_name }}(j["{{ member.name }}"]["{{ s_member.name[0] | lower + s_member.name[1:] }}"]);
+        {%- endif %}
+        {%- endif %}
+        {% endfor %}
+    }else{
+        obj.{{ member.name }} = nullptr;  // or handle as needed
+    }
+    {% else %}
+    {% for s_member in member.members %}
+    {%- if s_member.item_type == 'simple' %}
+    {%- if s_member.is_optional %}
+    if (j["{{ member.name }}"].contains("{{ s_member.name }}")) {
+        {% if s_member.data_type == "bool" %}
+        obj.{{ member.name }}->{{s_member.name}} = new BOOLEAN_t(j["{{ member.name }}"].at("{{ s_member.name }}").get<bool>() ? 1 : 0);
+        {% else %}
+        obj.{{ member.name }}->{{s_member.name}} = new long(j["{{ member.name }}"].at("{{ s_member.name }}").get<long>());
+        {% endif %}
+    } else{
+        obj.{{ member.name }}->{{ s_member.name }} = nullptr;  // or handle as needed
+    }
+    {%- else %}
+    {% if s_member.data_type == "bool" %}
+    obj.{{ member.name }}->{{ s_member.name }} = new BOOLEAN_t(j["{{ member.name }}"].at("{{ s_member.name }}").get<bool>() ? 1 : 0);
+    {% else %}
+    obj.{{ member.name }}->{{ s_member.name }} = new long(j["{{ member.name }}"].at("{{ s_member.name }}").get<long>());
+    {% endif %}
+    {%- endif %}
+    {%- elif s_member.item_type == 'complex' %}
+    {%- if s_member.is_optional %}
+    if (j["{{ member.name }}"].contains("{{ s_member.name[0] |lower + s_member.name[1:]  }}")) {
+        obj.{{ member.name }}->{{ s_member.name }} = new {{ s_member.struct_name }};
+        *(obj.{{ member.name }}->{{ s_member.name }}) = to_STRUCT_{{  s_member.function_name }}(j["{{ member.name }}"]["{{ s_member.name[0] | lower + s_member.name[1:] }}"]);
+    } else{
+        obj.{{ member.name }}->{{ s_member.name }} = nullptr;  // or handle as needed
+    }
+    {%- else %}
+    obj.{{ member.name }}->{{ s_member.name }} = to_STRUCT_{{  s_member.function_name }}(j["{{ member.name }}"]["{{ s_member.name[0] | lower + s_member.name[1:] }}"]);
+    {%- endif %}
+    {%- endif %}
+    {% endfor %}
+    {% endif%}
     {% elif member.item_type == "choice"%}
     {% if member.is_optional %}
     if (j.contains("{{member.name}}")) {

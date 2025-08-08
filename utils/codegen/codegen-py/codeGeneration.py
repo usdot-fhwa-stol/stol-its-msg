@@ -150,6 +150,21 @@ class CodeGen:
 
                     includes.extend(choice_response["includes"])
 
+                elif member_type=="SEQUENCE":
+                    seq_name=f"{self.validate_name(name)}__{member_name}"
+                    seq_response=self.process_sequence(seq_name, member)
+                    logging.debug(f"process_sequence response for name {name}: {json.dumps(seq_response, indent=4)}")
+                    member_data.append({
+                        "item_type": "sequence",
+                        "name": member_name,
+                        "struct_name": f"{self.validate_name(seq_name)}",
+                        "function_name": self.validate_name(seq_name),
+                        "is_optional": member_is_optional,
+                        "members": seq_response['members'],
+                    })
+
+                    includes.extend(seq_response["includes"])
+
                 elif member_type=="SEQUENCE OF":
                     seq_of_response=self.process_sequence_of(name,member)
                     member_type=f"{name}__{member_name}"
