@@ -1,7 +1,7 @@
 #pragma once
 
 #include "json.hpp"  
-#include "{{include_name}}.h"
+#include "{{include_name}}"
 
-nlohmann::json to_JSON_{{struct_name}}(const {{struct_name}}_t& obj);
-{{struct_name}}_t to_STRUCT_{{struct_name}}(const nlohmann::json& j);
+nlohmann::json to_JSON_{{function_name}}(const {{struct_name}}& obj);
+{{struct_name}} to_STRUCT_{{function_name}}(const nlohmann::json& j);

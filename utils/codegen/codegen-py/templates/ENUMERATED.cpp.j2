@@ -17,20 +17,20 @@ using json = nlohmann::json;
 
 */
 
-constexpr const char* {{ struct_name }}_to_string({{ struct_name }}_t obj) {
+constexpr const char* {{ function_name }}_to_string({{ struct_name }} obj) {
     switch (obj) {
         {%- for member in members %}
-        case {{ struct_name }}_{{ member.name }}: return "{{ member.name }}";
+        case {{ function_name }}_{{ member.name }}: return "{{ member.name }}";
         {%- endfor %}
         default: return "unknown";
     }
 }
 
-nlohmann::json to_JSON_{{ struct_name }}(const {{ struct_name }}_t& obj) {
-    return nlohmann::json({{ struct_name }}_to_string(obj));
+json to_JSON_{{ function_name }}(const {{ struct_name }}& obj) {
+    return json({{ function_name }}_to_string(obj));
 }
 
-{{ struct_name }}_t to_STRUCT_{{ struct_name }}(const nlohmann::json& j) {
+{{ struct_name }} to_STRUCT_{{ function_name }}(const nlohmann::json& j) {
     if (j.is_null() || !j.is_string()) {
         throw std::invalid_argument("Invalid JSON for {{ struct_name }}");
     }
@@ -39,9 +39,10 @@ nlohmann::json to_JSON_{{ struct_name }}(const {{ struct_name }}_t& obj) {
     
     {%- for member in members %}
     if (str == "{{ member.name }}") {
-        return {{ struct_name }}_{{ member.name }};
+        return {{ function_name }}_{{ member.name }};
     }
     {%- endfor %}
+    
     
     throw std::invalid_argument("Unknown value for {{ struct_name }}: " + str);
 }

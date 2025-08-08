@@ -15,58 +15,323 @@ using json = nlohmann::json;
 
 */
 
-json to_JSON_{{struct_name}}(const {{struct_name}}_t& obj) {
+json to_JSON_{{function_name}}(const {{struct_name}}& obj) {
     json j;
 
    
     {% for member in members %}
     {%- if member.item_type == 'simple' %}
-    {%- if member.optional %}
-    if (obj.{{ member.member_name }} != NULL) {
-        j["{{ member.member_name }}"] = *(obj.{{ member.member_name }});
+    {%- if member.is_optional %}
+    if (obj.{{ member.name }} != NULL) {
+        {% if member.data_type == "bool" %}
+        j["{{ member.name }}"] = static_cast<bool>(*(obj.{{ member.name }}));
+        {% else %}
+        j["{{ member.name }}"] = static_cast<long>(*(obj.{{ member.name }}));
+        {% endif %}
     }
     {%- else %}
-    j["{{ member.member_name }}"] = *(obj.{{ member.member_name }});
+    {% if member.data_type == "bool" %}
+    j["{{ member.name }}"] = static_cast<bool>((obj.{{ member.name }}));
+    {% else %}
+    j["{{ member.name }}"] = static_cast<long>((obj.{{ member.name }}));
+    {% endif %}
     {%- endif %}
     {%- elif member.item_type == 'complex' %}
-    {%- if member.optional %}
-    if (obj.{{ member.member_name }} != NULL) {
-        json {{ member.member_name }}_json = to_JSON_{{  member.struct_name }}(*obj.{{ member.member_name }});
-        j["{{ member.member_name }}"] = {{ member.member_name }}_json;
+    {%- if member.is_optional %}
+    if (obj.{{ member.name }} != NULL) {
+        json {{ member.name }}_json = to_JSON_{{  member.function_name }}(*obj.{{ member.name }});
+        j["{{ member.name[0] |lower + member.name[1:] }}"] = {{ member.name }}_json;
     } 
     {%- else %}
-    json {{ member.member_name }}_json = to_JSON_{{  member.struct_name }}(obj.{{ member.member_name }});
-    j["{{ member.member_name }}"] = {{ member.member_name }}_json;
+    json {{ member.name }}_json = to_JSON_{{  member.function_name }}(obj.{{ member.name }});
+    j["{{ member.name[0] |lower + member.name[1:] }}"] = {{ member.name }}_json;
     {%- endif %}
+    {% elif member.item_type =="sequence" %}
+    {% if member.is_optional %}
+    if (obj.{{ member.name }} != NULL) {
+        {% for s_member in member.members %}
+        {%- if s_member.item_type == 'simple' %}
+        {%- if s_member.is_optional %}
+        if (obj.{{ member.name }} != NULL) {
+            {% if s_member.data_type == "bool" %}
+            j["{{ s_member.name }}"] = static_cast<bool>(*(obj.{{ s_member.name }}));
+            {% else %}
+            j["{{ s_member.name }}"] = static_cast<long>(*(obj.{{ s_member.name }}));
+            {% endif %}
+        }
+        {%- else %}
+        {% if s_member.data_type == "bool" %}
+        j["{{ s_member.name }}"] = static_cast<bool>((obj.{{ s_member.name }}));
+        {% else %}
+        j["{{ s_member.name }}"] = static_cast<long>((obj.{{ s_member.name }}));
+        {% endif %}
+        {%- endif %}
+        {%- elif s_member.item_type == 'complex' %}
+        {%- if s_member.is_optional %}
+        if (obj.{{member.name}}->{{ s_member.name }} != NULL) {
+            json {{ s_member.name }}_json = to_JSON_{{  s_member.function_name }}(*obj.{{member.name}}->{{ s_member.name }});
+            j["{{ s_member.name[0] |lower + s_member.name[1:] }}"] = {{ s_member.name }}_json;
+        } 
+        {%- else %}
+        json {{ s_member.name }}_json = to_JSON_{{  s_member.function_name }}(obj.{{member.name}}->{{ s_member.name }});
+        j["{{ s_member.name[0] |lower + s_member.name[1:] }}"] = {{ s_member.name }}_json;
+        {%- endif %}
+        {%- endif %}
+        {% endfor %}
+    }
+    {% else %}
+    {% for s_member in member.members %}
+    {%- if s_member.item_type == 'simple' %}
+    {%- if s_member.is_optional %}
+    if (obj.{{ member.name }} != NULL) {
+        {% if s_member.data_type == "bool" %}
+        j["{{ s_member.name }}"] = static_cast<bool>(*(obj.{{ s_member.name }}));
+        {% else %}
+        j["{{ s_member.name }}"] = static_cast<long>(*(obj.{{ s_member.name }}));
+        {% endif %}
+    }
+    {%- else %}
+    {% if s_member.data_type == "bool" %}
+    j["{{ s_member.name }}"] = static_cast<bool>((obj.{{ s_member.name }}));
+    {% else %}
+    j["{{ s_member.name }}"] = static_cast<long>((obj.{{ s_member.name }}));
+    {% endif %}
+    {%- endif %}
+    {%- elif s_member.item_type == 'complex' %}
+    {%- if s_member.is_optional %}
+    if (obj.{{member.name}}->{{ s_member.name }} != NULL) {
+        json {{ s_member.name }}_json = to_JSON_{{  s_member.function_name }}(*obj.{{member.name}}->{{ s_member.name }});
+        j["{{ s_member.name[0] |lower + s_member.name[1:] }}"] = {{ s_member.name }}_json;
+    } 
+    {%- else %}
+    json {{ s_member.name }}_json = to_JSON_{{  s_member.function_name }}(obj.{{member.name}}->{{ s_member.name }});
+    j["{{ s_member.name[0] |lower + s_member.name[1:] }}"] = {{ s_member.name }}_json;
+    {%- endif %}
+    {%- endif %}
+    {% endfor %}
+    {% endif %}
+    {% elif member.item_type == "choice"%}
+    {% if member.is_optional %}
+    if (obj.{{ member.name }} != NULL) {
+        json j_{{member.name}};
+
+        switch (obj.{{member.name}}->present){
+            case {{member.struct_name}}_PR_NOTHING:{
+                j_{{member.name}} = nullptr;
+                break;
+            }
+            {% for choice in member.choices %}
+            case {{member.struct_name}}_PR_{{choice.name}}:{
+                j_{{member.name}}["{{choice.name}}"] = to_JSON_{{choice.function_name}}(obj.{{member.name}}->choice.{{choice.name}});
+                break;
+            }
+            {% endfor %}
+            default:
+                throw std::runtime_error("Unknown choice type");
+        }
+        j["{{member.name}}"] = j_{{member.name}};
+    }
+    {% else %}
+    json j_{{member.name}};
+    switch (obj.{{member.name}}.present){
+        case {{member.struct_name}}_PR_NOTHING:{
+            j_{{member.name}} = nullptr;
+            break;
+        }
+        {% for choice in member.choices %}
+        case {{member.struct_name}}_PR_{{choice.name}}:{
+            j_{{member.name}}["{{choice.name}}"] = to_JSON_{{choice.function_name}}(obj.{{member.name}}.choice.{{choice.name}});
+            break;
+        }
+        {% endfor %}
+        default:{
+            throw std::runtime_error("Unknown choice type");
+        }
+    }
+    j["{{member.name}}"] = j_{{member.name}};
+    {% endif %}
+    {% elif member.item_type == "sequence_of" %}
+    {% if member.is_optional %}
+    if (obj.{{ member.name }}!= NULL ) {
+        json j_{{member.name}}=json::array();
+
+        for(int i=0;i<obj.{{ member.name }}->list.count;++i){
+            const {{member.element_struct_name}}* item = obj.{{ member.name }}->list.array[i];
+            j_{{member.name}}.push_back(to_JSON_{{member.element_function_name}}(*item));
+        }
+
+        j["{{member.name}}"] = j_{{member.name}};
+    }
+    {% else %}
+    json j_{{member.name}}=json::array();
+
+    for(int i=0;i<obj.{{ member.name }}.list.count;++i){
+        const {{member.element_struct_name}}* item = obj.{{ member.name }}.list.array[i];
+        j_{{member.name}}.push_back(to_JSON_{{member.element_function_name}}(*item));
+    }
+
+    j["{{member.name}}"] = j_{{member.name}};
+    {% endif %}
     {%- endif %}
     {% endfor %}
     return j;
 }
 
-{{struct_name}}_t to_STRUCT_{{struct_name}}(const json& j) {
-    {{struct_name}}_t obj;
+{{struct_name}} to_STRUCT_{{function_name}}(const json& j) {
+    {{struct_name}} obj;
     {% for member in members %}
     {%- if member.item_type == 'simple' %}
-    {%- if member.optional %}
-    if (j.contains("{{ member.member_name }}")) {
-        obj.{{ member.member_name }} = j["{{ member.member_name }}"];
-    } 
-    {%- else %}
-    obj.{{ member.member_name }} = j["{{ member.member_name }}"];
-    {%- endif %}
-    {%- elif member.item_type == 'complex' %}
-    {%- if member.optional %}
-    if (j.contains("{{ member.member_name }}")) {
-        obj.{{ member.member_name }} = new {{ member.struct_name }}_t;
-        *(obj.{{ member.member_name }}) = to_STRUCT_{{  member.struct_name }}(j["{{ member.member_name }}"]);
+    {%- if member.is_optional %}
+    if (j.contains("{{ member.name }}")) {
+        {% if member.data_type == "bool" %}
+        obj.{{member.name}} = new BOOLEAN_t(j.at("{{ member.name }}").get<bool>() ? 1 : 0);
+        {% else %}
+        obj.{{member.name}} = new long(j.at("{{ member.name }}").get<long>());
+        {% endif %}
     } else{
-        obj.{{ member.member_name }} = nullptr;  // or handle as needed
+        obj.{{ member.name }} = nullptr;  // or handle as needed
     }
     {%- else %}
-    obj.{{ member.member_name }} = to_STRUCT_{{  member.struct_name }}(j["{{ member.member_name }}"]);
+    {% if member.data_type == "bool" %}
+    obj.{{ member.name }} = new BOOLEAN_t(j.at("{{ member.name }}").get<bool>() ? 1 : 0);
+    {% else %}
+    obj.{{ member.name }} = j.at("{{ member.name }}").get<long>();
+    {% endif %}
+    {%- endif %}
+    {%- elif member.item_type == 'complex' %}
+    {%- if member.is_optional %}
+    if (j.contains("{{ member.name[0] |lower + member.name[1:]  }}")) {
+        obj.{{ member.name }} = new {{ member.struct_name }};
+        *(obj.{{ member.name }}) = to_STRUCT_{{  member.function_name }}(j["{{ member.name[0] | lower + member.name[1:] }}"]);
+    } else{
+        obj.{{ member.name }} = nullptr;  // or handle as needed
+    }
+    {%- else %}
+    obj.{{ member.name }} = to_STRUCT_{{  member.function_name }}(j["{{ member.name[0] | lower + member.name[1:] }}"]);
+    {%- endif %}
+    {% elif member.item_type =="sequence" %}
+    {% if member.is_optional %}
+    if (j.contains("{{ member.name }}")) {
+        {% for s_member in member.members %}
+        {%- if s_member.item_type == 'simple' %}
+        {%- if s_member.is_optional %}
+        if (j["{{ member.name }}"].contains("{{ s_member.name }}")) {
+            {% if s_member.data_type == "bool" %}
+            obj.{{ member.name }}->{{s_member.name}} = new BOOLEAN_t(j["{{ member.name }}"].at("{{ s_member.name }}").get<bool>() ? 1 : 0);
+            {% else %}
+            obj.{{ member.name }}->{{s_member.name}} = new long(j["{{ member.name }}"].at("{{ s_member.name }}").get<long>());
+            {% endif %}
+        } else{
+            obj.{{ member.name }}->{{ s_member.name }} = nullptr;  // or handle as needed
+        }
+        {%- else %}
+        {% if s_member.data_type == "bool" %}
+        obj.{{ member.name }}->{{ s_member.name }} = new BOOLEAN_t(j["{{ member.name }}"].at("{{ s_member.name }}").get<bool>() ? 1 : 0);
+        {% else %}
+        obj.{{ member.name }}->{{ s_member.name }} = new long(j["{{ member.name }}"].at("{{ s_member.name }}").get<long>());
+        {% endif %}
+        {%- endif %}
+        {%- elif s_member.item_type == 'complex' %}
+        {%- if s_member.is_optional %}
+        if (j["{{ member.name }}"].contains("{{ s_member.name[0] |lower + s_member.name[1:]  }}")) {
+            obj.{{ member.name }}->{{ s_member.name }} = new {{ s_member.struct_name }};
+            *(obj.{{ member.name }}->{{ s_member.name }}) = to_STRUCT_{{  s_member.function_name }}(j["{{ member.name }}"]["{{ s_member.name[0] | lower + s_member.name[1:] }}"]);
+        } else{
+            obj.{{ member.name }}->{{ s_member.name }} = nullptr;  // or handle as needed
+        }
+        {%- else %}
+        obj.{{ member.name }}->{{ s_member.name }} = to_STRUCT_{{  s_member.function_name }}(j["{{ member.name }}"]["{{ s_member.name[0] | lower + s_member.name[1:] }}"]);
+        {%- endif %}
+        {%- endif %}
+        {% endfor %}
+    }else{
+        obj.{{ member.name }} = nullptr;  // or handle as needed
+    }
+    {% else %}
+    {% for s_member in member.members %}
+    {%- if s_member.item_type == 'simple' %}
+    {%- if s_member.is_optional %}
+    if (j["{{ member.name }}"].contains("{{ s_member.name }}")) {
+        {% if s_member.data_type == "bool" %}
+        obj.{{ member.name }}->{{s_member.name}} = new BOOLEAN_t(j["{{ member.name }}"].at("{{ s_member.name }}").get<bool>() ? 1 : 0);
+        {% else %}
+        obj.{{ member.name }}->{{s_member.name}} = new long(j["{{ member.name }}"].at("{{ s_member.name }}").get<long>());
+        {% endif %}
+    } else{
+        obj.{{ member.name }}->{{ s_member.name }} = nullptr;  // or handle as needed
+    }
+    {%- else %}
+    {% if s_member.data_type == "bool" %}
+    obj.{{ member.name }}->{{ s_member.name }} = new BOOLEAN_t(j["{{ member.name }}"].at("{{ s_member.name }}").get<bool>() ? 1 : 0);
+    {% else %}
+    obj.{{ member.name }}->{{ s_member.name }} = new long(j["{{ member.name }}"].at("{{ s_member.name }}").get<long>());
+    {% endif %}
+    {%- endif %}
+    {%- elif s_member.item_type == 'complex' %}
+    {%- if s_member.is_optional %}
+    if (j["{{ member.name }}"].contains("{{ s_member.name[0] |lower + s_member.name[1:]  }}")) {
+        obj.{{ member.name }}->{{ s_member.name }} = new {{ s_member.struct_name }};
+        *(obj.{{ member.name }}->{{ s_member.name }}) = to_STRUCT_{{  s_member.function_name }}(j["{{ member.name }}"]["{{ s_member.name[0] | lower + s_member.name[1:] }}"]);
+    } else{
+        obj.{{ member.name }}->{{ s_member.name }} = nullptr;  // or handle as needed
+    }
+    {%- else %}
+    obj.{{ member.name }}->{{ s_member.name }} = to_STRUCT_{{  s_member.function_name }}(j["{{ member.name }}"]["{{ s_member.name[0] | lower + s_member.name[1:] }}"]);
     {%- endif %}
     {%- endif %}
     {% endfor %}
+    {% endif%}
+    {% elif member.item_type == "choice"%}
+    {% if member.is_optional %}
+    if (j.contains("{{member.name}}")) {
+        obj.{{member.name}} = new {{function_name}}::{{member.struct_name}};
+
+        {% for choice in member.choices %}
+        if(j["{{member.name}}"].contains("{{choice.name}}")) {
+            obj.{{member.name}}->present = {{member.struct_name}}_PR_{{choice.name}};
+            obj.{{member.name}}->choice.{{choice.name}} = to_STRUCT_{{choice.function_name}}(j["{{member.name}}"]["{{choice.name}}"]);
+        }
+        {% endfor %}
+    } else {
+        obj.{{member.name}}->present = {{member.struct_name}}_PR_NOTHING;
+    }
+    {% else %}
+    {% for choice in member.choices %}
+    if(j.contains("{{member.name}}") && j["{{member.name}}"].contains("{{choice.name}}")) {
+        obj.{{member.name}}.present = {{member.struct_name}}_PR_{{choice.name}};
+        obj.{{member.name}}.choice.{{choice.name}} = to_STRUCT_{{choice.function_name}}(j["{{member.name}}"]["{{choice.name}}"]);
+    }
+    {% endfor %}
+    if (!j.contains("{{member.name}}") || j["{{member.name}}"].is_null()) {
+        obj.{{member.name}}.present = {{member.struct_name}}_PR_NOTHING;
+    }
+    {% endif %}
+    {% elif member.item_type == "sequence_of" %}
+    {% if member.is_optional %}
+    if (j.contains("{{member.name}}")) {
+        obj.{{member.name}} = new {{struct_name}}::{{member.struct_name}};
+        obj.{{member.name}}->list.count = j["{{member.name}}"].size();
+        obj.{{member.name}}->list.array = new {{member.element_struct_name}}*[obj.{{member.name}}->list.count];
+
+        for(int i=0;i<obj.{{member.name}}->list.count;++i){
+            obj.{{member.name}}->list.array[i] = new {{member.element_struct_name}}(to_STRUCT_{{member.element_function_name}}(j["{{member.name}}"][i]));
+        }
+
+    }else{
+        obj.{{member.name}} = nullptr;  // or handle as needed
+    }
+    {% else %}
+
+    obj.{{member.name}}.list.count = j["{{member.name}}"].size();
+    obj.{{member.name}}.list.array = new {{member.element_struct_name}}*[obj.{{member.name}}.list.count];
+
+    for(int i=0;i<obj.{{member.name}}.list.count;++i){
+        obj.{{member.name}}.list.array[i] = new {{member.element_struct_name}}(to_STRUCT_{{member.element_function_name}}(j["{{member.name}}"][i]));
+    }
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+
 
     return obj;
 }

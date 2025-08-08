@@ -24,9 +24,7 @@
             "request": "launch",
             "program": "utils/codegen/asn1ToC/asn1ToC.py",
             "args": [
-                "asn1/raw/carma_j2735/BasicSafetyMessage.asn",
-                "-t",
-                "carma_j2735",
+                "asn1/raw/carma_j2735/",
                 "-o",
                 "stol_its_coding"
             ],
@@ -39,6 +37,11 @@
             "request": "launch",
             "program": "utils/codegen/codegen-py/codeGeneration.py",
             "args": [
+                "asn1/raw/carma_j2735/",
+                "-o",
+                "stol_its_conversion",
+                "--log-level",
+                "DEBUG"
             ],
             "console": "integratedTerminal",
             "justMyCode": true

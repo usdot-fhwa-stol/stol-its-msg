@@ -1,6 +1,4 @@
 #include "json.hpp"
-#include "{{include_name}}.h"
-
 {%- for include in includes %}
 #include "{{ include.name }}"
 {% endfor %}
@@ -15,11 +13,19 @@ using json = nlohmann::json;
 {%- endif %}
 */
 
-json to_JSON_{{struct_name}}(const {{struct_name}}_t& obj) {
-   return json(obj);
+json to_JSON_{{function_name}}(const {{struct_name}}& obj) {
+    {% if data_type == "BOOLEAN" %}
+    return json(static_cast<bool>(obj));
+    {% else %}
+    return json(obj);
+    {% endif %}
 }
 
-{{struct_name}}_t to_STRUCT_{{struct_name}}(const json& j) {
-    return j.get<{{struct_name}}_t>();
+{{struct_name}} to_STRUCT_{{function_name}}(const json& j) {
+    {% if data_type == "BOOLEAN" %}
+    return j.get<bool>();
+    {% else %}
+    return j.get<{{struct_name}}>();
+    {% endif %}
 }
 

@@ -16,14 +16,30 @@ using json = nlohmann::json;
 
 */
 
-json to_JSON_{{struct_name}}(const {{struct_name}}_t& obj) {
+json to_JSON_{{function_name}}(const {{struct_name}}& obj) {
     json j;
 
     switch (obj.present) {
-        {% for choice in choices %}
-        case {{struct_name}}_PR_{{choice.name}}:
-            j["{{choice.name}}"] = to_JSON_{{choice.struct_name}}(obj.choice.{{choice.name}});
+        case {{function_name}}_PR_NOTHING:{
+            j = nullptr;
             break;
+        }
+        {% for choice in choices %}
+        case {{function_name}}_PR_{{choice.name}}:{
+            {% if choice.item_type =="complex" %}
+            j["{{choice.name}}"] = to_JSON_{{choice.function_name}}(obj.choice.{{choice.name}});
+            break;
+            {% elif choice.item_type == "sequence_of" %}
+            json j_{{choice.name}}= json::array();
+
+            for(int i=0;i<obj.choice.{{choice.name}}.list.count;++i){
+                j_{{choice.name}}.push_back(to_JSON_{{choice.element_function_name}}(*(obj.choice.{{choice.name}}.list.array[i])));
+            }
+            j["{{choice.name}}"] = j_{{choice.name}};
+
+            break;
+            {% endif %}
+        }
         {% endfor %}
         default:
             j = nullptr;
@@ -34,26 +50,32 @@ json to_JSON_{{struct_name}}(const {{struct_name}}_t& obj) {
 }
 
 
-{{struct_name}}_t to_STRUCT_{{struct_name}}(const json& j) {
-    {{struct_name}}_t obj;
+{{struct_name}} to_STRUCT_{{function_name}}(const json& j) {
+    {{struct_name}} obj;
 
     if (j.is_null()) {
-        obj.present = {{struct_name}}_PR_NOTHING;
+        obj.present = {{function_name}}_PR_NOTHING;
         return obj;
     }
 
-    if (j.contains("{{choices[0].name}}")) {
-        obj.present = {{struct_name}}_PR_{{choices[0].name}};
-        obj.choice.{{choices[0].name}} = to_STRUCT_{{choices[0].struct_name}}(j["{{choices[0].name}}"]);
-    } else {
-        // Handle other choices similarly
-        {% for choice in choices[1:] %}
-        else if (j.contains("{{choice.name}}")) {
-            obj.present = {{struct_name}}_PR_{{choice.name}};
-            obj.choice.{{choice.name}} = to_STRUCT_{{choice.struct_name}}(j["{{choice.name}}"]);
-        }
-        {% endfor %}
+    {% for choice in choices %}
+    {% if choice.item_type == "complex" %}
+    else if (j.contains("{{choice.name}}")) {
+        obj.present = {{function_name}}_PR_{{choice.name}};
+        obj.choice.{{choice.name}} = to_STRUCT_{{choice.function_name}}(j["{{choice.name}}"]);
     }
+    {% elif choice.item_type == "sequence_of" %}
+    else if (j.contains("{{choice.name}}")) {
+        obj.present = {{function_name}}_PR_{{choice.name}};
+        obj.choice.{{choice.name}}.list.count = j["{{choice.name}}"].size();
+        obj.choice.{{choice.name}}.list.array = new {{choice.element_struct_name}}*[obj.choice.{{choice.name}}.list.count];
+
+        for(int i=0;i<obj.choice.{{choice.name}}.list.count;++i){
+            obj.choice.{{choice.name}}.list.array[i] = new {{choice.element_struct_name}}(to_STRUCT_{{choice.element_function_name}}(j["{{choice.name}}"][i]));
+        }
+    }
+    {% endif %}
+    {% endfor %}
 
     return obj;
 }

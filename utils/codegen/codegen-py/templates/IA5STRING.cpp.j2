@@ -16,17 +16,17 @@ using json = nlohmann::json;
 
 */
 
-json to_JSON_{{ struct_name }}(const {{ struct_name }}_t& obj) {
+json to_JSON_{{ function_name }}(const {{ struct_name }}& obj) {
     if (!obj.buf || obj.size == 0) {
         return nullptr;
     }
 
     std::string str(reinterpret_cast<const char*>(obj.buf), obj.size);
-    return nlohmann::json(str);
+    return json(str);
 }
 
-{{ struct_name }}_t to_STRUCT_{{ struct_name }}(const json& j) {
-    {{ struct_name }}_t obj;
+{{ struct_name }} to_STRUCT_{{ function_name }}(const json& j) {
+    {{ struct_name }} obj;
 
     if (j.is_null()) {
         obj.buf = nullptr;
