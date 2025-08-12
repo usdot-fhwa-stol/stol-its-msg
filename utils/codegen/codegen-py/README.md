@@ -4,6 +4,8 @@
 
 - Make sure you place your spec files in asn1/raw/carma_j2735
 
+
+
 ###
 
 ### Steps
@@ -28,3 +30,21 @@
 - To build the project 
     - `chmod +x build.sh` (one time command)
     - `./build.sh`
+
+### Running the project
+
+#### For each ASN.1 specification file you have, ensure there is a matching test `.cpp` file in the `assets` folder.
+
+| ASN.1 Spec File                | Required Test File in `assets/`           |
+|--------------------------------|--------------------------------------------|
+| `BasicSafetyMessage.asn1`      | `test_1_BasicSafetyMessage.cpp`            |
+| `TravelerInformation.asn1`     | `test_1_TravelerInformation.cpp`           |
+| `<YourSpecName>.asn1`          | `test_1_<YourSpecName>.cpp`                |
+
+
+
+To execute a particular encode or decode program:
+- `cd build`
+- `decode_<YourSpecName>` (depends on which one you want to run)
+
+
