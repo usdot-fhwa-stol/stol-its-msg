@@ -22,12 +22,9 @@
     - `python3 utils/codegen/asn1ToC/asn1ToC.py asn1/raw/carma_j2735/ -o stol_its_coding`
 
 
-- To generate decoding functions for list of specification files in asn1/raw/carma_j2735 (this generates the conversion functions in stol_its_conversion )
+- To generate encoding/decoding functions for list of specification files in asn1/raw/carma_j2735 (this generates the conversion functions in stol_its_conversion )
     - `python3 utils/codegen/codegen-py/codeGeneration.py asn1/raw/carma_j2735/ -o stol_its_conversion --log-level DEBUG`
 
 - To build the project 
     - `chmod +x build.sh` (one time command)
-    - `./build.sh -DCODING_INPUT_DIR=stol_its_coding -DCONVERSION_INPUT_DIR=stol_its_conversion`
-
-> **Important:** 
-Argumets CODING_INPUT_DIR, CONVERSION_INPUT_DIR passed to build.sh should be same as -o arguments from previous steps.
+    - `./build.sh`
