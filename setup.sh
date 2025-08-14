@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e  # Exit on first error
 
 
 # Detect OS
@@ -35,6 +34,14 @@ else
     echo "Docker is already installed."
 fi
 
+if command -v docker &>/dev/null; then
+    if [[ "$OS" == "Linux" ]]; then
+        sudo systemctl start docker
+    elif [[ "$OS" == "Darwin" ]]; then
+        open -a Docker
+    fi
+fi
+
 
 # ===== CMake =====
 if ! command -v cmake &>/dev/null; then
@@ -65,16 +72,26 @@ fi
 
 # ===== Copy Parser Script =====
 
-PARSER_PY="./assets/parser.py"
+PARSER_PY="$(realpath ./assets/parser.py)"
 
-SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+if command -v python3 &>/dev/null; then
+    PYTHON=python3
+elif command -v python &>/dev/null; then
+    PYTHON=python
+else
+    echo "Error: Python not found."
+    exit 1
+fi
+
+SITE_PACKAGES=$($PYTHON -c "import site; print(site.getsitepackages()[0])")
 DEST_PARSER_PY="$SITE_PACKAGES/asn1tools/parser.py"
 
-if [ ! -f "$PARSER_PY" ]; then
+echo "Copying parser.py to $DEST_PARSER_PY"
+
+if [ -f "$PARSER_PY" ]; then
     cp "$PARSER_PY" "$DEST_PARSER_PY"
     echo "Copied parser.py to site-packages."
 fi
 
 echo "Setup complete. You can now run the project."
-
 
